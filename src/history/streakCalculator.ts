@@ -59,23 +59,41 @@ export function calculateStreak(
 
   // Deduplicate and filter valid 'YYYY-MM-DD' patterns
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  const uniqueDates = Array.from(
+  const rawUniqueDates = Array.from(
     new Set(dateKeys.filter((k) => typeof k === 'string' && dateRegex.test(k)))
   );
 
-  if (uniqueDates.length === 0) {
+  if (rawUniqueDates.length === 0) {
+    return { currentStreak: 0, bestStreak: 0 };
+  }
+
+  const todayKey = getLocalDateKey(referenceDate);
+
+  // Timezone & Future Date Validation Policy:
+  // - Global timezones span from UTC-12 to UTC+14 (at most 26 hours total difference).
+  // - A workout can legitimately be at most 1 calendar day ahead of local reference date
+  //   (e.g., user trained in Tokyo on Oct 22 and flew westward to Honolulu where it is Oct 21: diff = -1).
+  // - Any record >= 2 days in the future (diff < -1) is physically impossible through normal timezone
+  //   differences and represents an invalid/corrupted date. It is excluded so future timestamps
+  //   cannot falsely preserve an active streak forever.
+  const validDates = rawUniqueDates.filter((dateStr) => {
+    const diff = getDaysDifference(dateStr, todayKey);
+    return diff >= -1;
+  });
+
+  if (validDates.length === 0) {
     return { currentStreak: 0, bestStreak: 0 };
   }
 
   // Sort chronologically ascending
-  uniqueDates.sort((a, b) => a.localeCompare(b));
+  validDates.sort((a, b) => a.localeCompare(b));
 
-  // 1. Calculate best streak across historical timeline
+  // 1. Calculate best streak across valid historical timeline
   let bestStreak = 1;
   let currentRun = 1;
 
-  for (let i = 1; i < uniqueDates.length; i++) {
-    const diff = getDaysDifference(uniqueDates[i - 1], uniqueDates[i]);
+  for (let i = 1; i < validDates.length; i++) {
+    const diff = getDaysDifference(validDates[i - 1], validDates[i]);
     if (diff === 1) {
       currentRun += 1;
       if (currentRun > bestStreak) {
@@ -86,22 +104,20 @@ export function calculateStreak(
     }
   }
 
-  // 2. Calculate current active streak ending today or yesterday
-  const todayKey = getLocalDateKey(referenceDate);
-  const latestTrained = uniqueDates[uniqueDates.length - 1];
+  // 2. Calculate current active streak ending today, yesterday, or tomorrow (timezone shift)
+  const latestTrained = validDates[validDates.length - 1];
   const diffFromToday = getDaysDifference(latestTrained, todayKey);
 
-  // If latest training was before yesterday (diff > 1), the active streak has lapsed.
-  // If diffFromToday <= 1 (including negative differences when timezone moves westward or
-  // user trains across midnight/clock adjustments), the streak remains active.
+  // If latest training was before yesterday (diffFromToday > 1), the active streak has lapsed.
+  // diffFromToday is guaranteed >= -1 due to the filter above.
   if (diffFromToday > 1) {
     return { currentStreak: 0, bestStreak };
   }
 
   // Walk backwards from latest training date counting consecutive days
   let activeStreak = 1;
-  for (let i = uniqueDates.length - 1; i > 0; i--) {
-    const diff = getDaysDifference(uniqueDates[i - 1], uniqueDates[i]);
+  for (let i = validDates.length - 1; i > 0; i--) {
+    const diff = getDaysDifference(validDates[i - 1], validDates[i]);
     if (diff === 1) {
       activeStreak += 1;
     } else {

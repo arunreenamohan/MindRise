@@ -122,6 +122,24 @@ describe('Streak Calculator & Date Utilities', () => {
       expect(result.currentStreak).toBe(2);
       expect(result.bestStreak).toBe(2);
     });
+
+    it('ignores arbitrarily future-dated records (>= 2 days ahead) and does not preserve a lapsed streak', () => {
+      const refDate = new Date(2026, 9, 21); // 2026-10-21 (Today)
+      // User trained 5 days ago (2026-10-16), has a corrupted record in 2099 (2099-01-01)
+      const dates = ['2026-10-15', '2026-10-16', '2099-01-01'];
+      const result = calculateStreak(dates, refDate);
+
+      // Streak should be lapsed (0), best streak across valid history is 2
+      expect(result.currentStreak).toBe(0);
+      expect(result.bestStreak).toBe(2);
+    });
+
+    it('returns 0 streak when records contain only invalid future dates', () => {
+      const refDate = new Date(2026, 9, 21);
+      const result = calculateStreak(['2028-05-10', '2099-12-31'], refDate);
+      expect(result.currentStreak).toBe(0);
+      expect(result.bestStreak).toBe(0);
+    });
   });
 
   describe('calculateDrillPerformanceIndex', () => {
