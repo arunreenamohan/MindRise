@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   AppState,
   AppStateStatus,
+  BackHandler,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenContainer } from '../components/ScreenContainer';
@@ -160,27 +161,31 @@ export const MemoryMatrixGameScreen: React.FC = () => {
     dispatch({ type: 'TAP_TILE', tileIndex });
   };
 
-  const handlePause = () => {
+  const handlePause = useCallback(() => {
     clearTimers();
     dispatch({ type: 'PAUSE_GAME' });
-  };
+  }, [clearTimers]);
 
-  const handleResume = () => {
+  const handleResume = useCallback(() => {
+    if (state.previousPhase === 'countdown') {
+      setCountdown(3);
+    }
     dispatch({ type: 'RESUME_GAME' });
-  };
+  }, [state.previousPhase]);
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     clearTimers();
+    setCountdown(3);
     dispatch({ type: 'RESTART_GAME' });
-  };
+  }, [clearTimers]);
 
-  const handleQuitConfirm = () => {
+  const handleQuitConfirm = useCallback(() => {
     clearTimers();
     setShowExitConfirm(false);
     navigation.goBack();
-  };
+  }, [clearTimers, navigation]);
 
-  const handleBackPress = () => {
+  const handleBackPress = useCallback(() => {
     if (state.phase === 'completed' || state.phase === 'game-over') {
       navigation.goBack();
       return;
@@ -188,7 +193,28 @@ export const MemoryMatrixGameScreen: React.FC = () => {
     clearTimers();
     dispatch({ type: 'PAUSE_GAME' });
     setShowExitConfirm(true);
-  };
+  }, [state.phase, clearTimers, navigation]);
+
+  // Hardware Back Button (Android)
+  useEffect(() => {
+    const onHardwareBack = () => {
+      if (showExitConfirm) {
+        setShowExitConfirm(false);
+        if (state.phase === 'paused') {
+          handleResume();
+        }
+        return true;
+      }
+      handleBackPress();
+      return true;
+    };
+
+    const backSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onHardwareBack
+    );
+    return () => backSubscription.remove();
+  }, [showExitConfirm, state.phase, handleBackPress, handleResume]);
 
   // Responsive Grid Geometry
   const gridMetrics = useMemo(() => {
@@ -254,8 +280,8 @@ export const MemoryMatrixGameScreen: React.FC = () => {
           </Text>
           <Text style={[typography.bodyMedium, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
             {isSuccess
-              ? 'Outstanding focus! You successfully traversed all 10 rounds of the spatial matrix.'
-              : 'You pushed your memory buffer to its current limit. Review your metrics below.'}
+              ? t.memoryMatrix.sessionCompleteSubtitle
+              : t.memoryMatrix.gameOverSubtitle}
           </Text>
         </View>
 
@@ -268,7 +294,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
             {stats?.finalScore.toLocaleString() ?? state.score.toLocaleString()}
           </Text>
           <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 4 }]}>
-            Calibrated Visuospatial Score Points
+            {t.memoryMatrix.scoreSubtitle}
           </Text>
         </Card>
 
@@ -303,7 +329,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
 
           <Card variant="elevated" style={styles.metricCard}>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
-              Rounds Played
+              {t.memoryMatrix.roundsPlayedLabel}
             </Text>
             <Text style={[typography.h2, { color: colors.textPrimary, marginTop: 6 }]}>
               {stats?.roundsCompleted ?? 0} / {state.totalRounds}
@@ -416,7 +442,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
               {countdown > 0 ? countdown : 'START!'}
             </Text>
             <Text style={[typography.bodyMedium, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
-              Get ready to memorize the illuminated pattern!
+              {t.memoryMatrix.countdownHint}
             </Text>
           </View>
         )}
@@ -460,7 +486,9 @@ export const MemoryMatrixGameScreen: React.FC = () => {
               {isPerfectFeedback ? t.memoryMatrix.perfectRound : t.memoryMatrix.roundFailed}
             </Text>
             <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 4, textAlign: 'center' }]}>
-              {isPerfectFeedback ? `+${state.roundScore} points earned!` : 'Revealing missed pattern tiles...'}
+              {isPerfectFeedback
+                ? `+${state.roundScore} ${t.memoryMatrix.perfectFeedbackSub}`
+                : t.memoryMatrix.failedFeedbackSub}
             </Text>
           </View>
         )}
@@ -510,6 +538,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
                 key={index}
                 disabled={!isClickable}
                 onPress={() => handleTilePress(index)}
+                hitSlop={state.gridSize >= 5 ? { top: 6, bottom: 6, left: 6, right: 6 } : undefined}
                 style={({ pressed }) => [
                   styles.tile,
                   {
@@ -583,7 +612,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
 
             <View style={styles.quitActions}>
               <Button
-                title="Keep Playing"
+                title={t.memoryMatrix.keepPlayingCta}
                 onPress={() => {
                   setShowExitConfirm(false);
                   if (state.phase === 'paused') {
@@ -594,7 +623,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
                 size="md"
               />
               <Button
-                title="Exit Session"
+                title={t.memoryMatrix.exitSessionCta}
                 onPress={handleQuitConfirm}
                 variant="danger"
                 size="md"

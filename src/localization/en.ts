@@ -129,8 +129,17 @@ export const en: Translations = {
     accuracyLabel: 'Recall Accuracy',
     highestLevelLabel: 'Highest Level',
     perfectRoundsLabel: 'Perfect Rounds',
+    roundsPlayedLabel: 'Rounds Played',
     playAgainCta: 'Play Again',
     finishCta: 'Finish & Back to Gym',
+    keepPlayingCta: 'Keep Playing',
+    exitSessionCta: 'Exit Session',
+    scoreSubtitle: 'Calibrated Visuospatial Score Points',
+    countdownHint: 'Get ready to memorize the illuminated pattern!',
+    perfectFeedbackSub: 'points earned!',
+    failedFeedbackSub: 'Revealing missed pattern tiles...',
+    sessionCompleteSubtitle: 'Outstanding focus! You successfully traversed all 10 rounds of the spatial matrix.',
+    gameOverSubtitle: 'You pushed your memory buffer to its current limit. Review your metrics below.',
   },
 };
 

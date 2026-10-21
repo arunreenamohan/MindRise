@@ -129,7 +129,16 @@ export interface Translations {
     accuracyLabel: string;
     highestLevelLabel: string;
     perfectRoundsLabel: string;
+    roundsPlayedLabel: string;
     playAgainCta: string;
     finishCta: string;
+    keepPlayingCta: string;
+    exitSessionCta: string;
+    scoreSubtitle: string;
+    countdownHint: string;
+    perfectFeedbackSub: string;
+    failedFeedbackSub: string;
+    sessionCompleteSubtitle: string;
+    gameOverSubtitle: string;
   };
 }

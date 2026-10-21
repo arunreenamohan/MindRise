@@ -47,8 +47,12 @@ export function getLevelConfig(level: number): LevelConfig {
  * - Non-perfect round (any mistake made): level decreases by 1 (down to MIN_LEVEL).
  */
 export function computeNextLevel(currentLevel: number, isPerfect: boolean): number {
+  const safeCurrent = Math.max(
+    MIN_LEVEL,
+    Math.min(MAX_LEVEL, Number.isFinite(currentLevel) ? Math.round(currentLevel) : MIN_LEVEL)
+  );
   if (isPerfect) {
-    return Math.min(MAX_LEVEL, currentLevel + 1);
+    return Math.min(MAX_LEVEL, safeCurrent + 1);
   }
-  return Math.max(MIN_LEVEL, currentLevel - 1);
+  return Math.max(MIN_LEVEL, safeCurrent - 1);
 }

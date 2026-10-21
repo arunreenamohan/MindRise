@@ -382,12 +382,115 @@ describe('Memory Matrix — Pure Game Engine', () => {
       expect(state.phase).toBe('recall');
       expect(state.previousPhase).toBeNull();
 
-      // Restart resets to round 1 preview
+      // Restart resets to countdown phase with full lives and 0 score
       state = matrixReducer(state, { type: 'RESTART_GAME', timestamp: 5000 });
-      expect(state.phase).toBe('preview');
+      expect(state.phase).toBe('countdown');
       expect(state.currentRound).toBe(1);
       expect(state.score).toBe(0);
       expect(state.strikesRemaining).toBe(MAX_STRIKES);
+    });
+
+    it('supports pausing and resuming during countdown and round-feedback phases', () => {
+      // 1. Pause during countdown
+      let state = createInitialGameState(1);
+      expect(state.phase).toBe('countdown');
+
+      state = matrixReducer(state, { type: 'PAUSE_GAME', timestamp: 1000 });
+      expect(state.phase).toBe('paused');
+      expect(state.previousPhase).toBe('countdown');
+
+      state = matrixReducer(state, { type: 'RESUME_GAME', timestamp: 2000 });
+      expect(state.phase).toBe('countdown');
+      expect(state.previousPhase).toBeNull();
+
+      // 2. Pause during round-feedback
+      state = matrixReducer(state, {
+        type: 'START_PREVIEW',
+        targetIndices: [0, 1],
+        previewDurationMs: 2000,
+        timestamp: 2500,
+      });
+      state = matrixReducer(state, { type: 'START_RECALL', timestamp: 4500 });
+      state = matrixReducer(state, { type: 'TAP_TILE', tileIndex: 0, timestamp: 5000 });
+      state = matrixReducer(state, { type: 'TAP_TILE', tileIndex: 1, timestamp: 5500 });
+      expect(state.phase).toBe('round-feedback');
+
+      state = matrixReducer(state, { type: 'PAUSE_GAME', timestamp: 5600 });
+      expect(state.phase).toBe('paused');
+      expect(state.previousPhase).toBe('round-feedback');
+
+      state = matrixReducer(state, { type: 'RESUME_GAME', timestamp: 8000 });
+      expect(state.phase).toBe('round-feedback');
+      expect(state.previousPhase).toBeNull();
+    });
+
+    it('preserves speed bonus by excluding paused duration during recall', () => {
+      let state = createInitialGameState(1);
+      state = matrixReducer(state, {
+        type: 'START_PREVIEW',
+        targetIndices: [0],
+        previewDurationMs: 2000,
+        timestamp: 1000,
+      });
+      // Recall starts at T=3000
+      state = matrixReducer(state, { type: 'START_RECALL', timestamp: 3000 });
+
+      // Player pauses at T=4000 (1 second into recall)
+      state = matrixReducer(state, { type: 'PAUSE_GAME', timestamp: 4000 });
+      expect(state.phase).toBe('paused');
+      expect(state.pausedAt).toBe(4000);
+
+      // Player stays paused for 10 seconds (until T=14000)
+      state = matrixReducer(state, { type: 'RESUME_GAME', timestamp: 14000 });
+      expect(state.phase).toBe('recall');
+      expect(state.pausedAt).toBeNull();
+      // recallStartTime should have shifted forward from 3000 to 13000 (by 10000ms pause)
+      expect(state.recallStartTime).toBe(13000);
+
+      // Player taps target at T=15000 (1s after resume; 2s total active recall time)
+      state = matrixReducer(state, { type: 'TAP_TILE', tileIndex: 0, timestamp: 15000 });
+      expect(state.phase).toBe('round-feedback');
+
+      // Recall duration should be 2000ms (15000 - 13000), NOT 12000ms!
+      const lastRound = state.roundHistory[0];
+      expect(lastRound.recallDurationMs).toBe(2000);
+      expect(lastRound.isPerfect).toBe(true);
+
+      // Under 6000ms limit, speed bonus is awarded!
+      // Base (100) + Perfect (250) + Speed (floor((6000-2000)/100)=40) = 390
+      expect(lastRound.roundScore).toBe(390);
+    });
+
+    it('initializes sessionStartTime on START_PREVIEW and tracks accurate session duration', () => {
+      let state = createInitialGameState(1);
+      expect(state.sessionStartTime).toBe(0);
+
+      state = matrixReducer(state, {
+        type: 'START_PREVIEW',
+        targetIndices: [0],
+        previewDurationMs: 2000,
+        timestamp: 5000,
+      });
+      expect(state.sessionStartTime).toBe(5000);
+
+      state = matrixReducer(state, { type: 'START_RECALL', timestamp: 7000 });
+      state = matrixReducer(state, { type: 'TAP_TILE', tileIndex: 0, timestamp: 8000 });
+
+      // End round feedback at T=25000 (total duration = 20000ms)
+      state = { ...state, currentRound: TOTAL_SESSION_ROUNDS };
+      state = matrixReducer(state, { type: 'END_ROUND_FEEDBACK', timestamp: 25000 });
+
+      expect(state.phase).toBe('completed');
+      expect(state.sessionStats).not.toBeNull();
+      expect(state.sessionStats?.totalDurationMs).toBe(20000);
+    });
+
+    it('handles abnormal difficulty inputs gracefully', () => {
+      expect(computeNextLevel(NaN, true)).toBe(2);
+      expect(computeNextLevel(99, true)).toBe(MAX_LEVEL);
+      expect(computeNextLevel(-10, false)).toBe(MIN_LEVEL);
+      expect(computeNextLevel(MAX_LEVEL, true)).toBe(MAX_LEVEL);
+      expect(computeNextLevel(MIN_LEVEL, false)).toBe(MIN_LEVEL);
     });
   });
 });

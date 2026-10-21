@@ -63,10 +63,12 @@ export function calculateRoundScore({
   const basePoints = safeCorrect * BASE_POINTS_PER_TILE * safeLevel;
   const perfectBonus = isPerfect ? PERFECT_ROUND_BONUS * safeLevel : 0;
 
+  const safeRecallDuration = Math.max(0, Number.isFinite(recallDurationMs) ? recallDurationMs : 0);
+
   // Speed bonus only awarded if the round was completed cleanly
   const speedBonus =
-    isPerfect && recallDurationMs < SPEED_BONUS_TIME_LIMIT_MS
-      ? Math.floor((SPEED_BONUS_TIME_LIMIT_MS - Math.max(0, recallDurationMs)) / 100) * safeLevel
+    isPerfect && safeRecallDuration < SPEED_BONUS_TIME_LIMIT_MS
+      ? Math.floor((SPEED_BONUS_TIME_LIMIT_MS - safeRecallDuration) / 100) * safeLevel
       : 0;
 
   const penalty = safeMistakes * MISTAKE_PENALTY_PER_TILE * safeLevel;
@@ -93,7 +95,8 @@ export function computeSessionStats(
   roundHistory: RoundResult[],
   totalRounds: number,
   sessionStartTime: number,
-  completedAtIso = new Date().toISOString()
+  completedAtIso = new Date().toISOString(),
+  currentTime?: number
 ): MemoryMatrixSessionStats {
   const totalCorrect = roundHistory.reduce((acc, r) => acc + r.correctCount, 0);
   const totalMistakes = roundHistory.reduce((acc, r) => acc + r.mistakesCount, 0);
@@ -103,7 +106,13 @@ export function computeSessionStats(
   const accuracyPercentage = totalTaps > 0 ? Math.round((totalCorrect / totalTaps) * 100) : 0;
   const highestLevel = roundHistory.reduce((max, r) => Math.max(max, r.level), 1);
   const perfectRounds = roundHistory.filter((r) => r.isPerfect).length;
-  const totalDurationMs = Math.max(0, Date.now() - sessionStartTime);
+  
+  const now = currentTime ?? Date.now();
+  // Safe duration calculation: if sessionStartTime was 0, fallback to sum of round recall durations
+  const totalDurationMs =
+    sessionStartTime > 0 && Number.isFinite(sessionStartTime)
+      ? Math.max(0, now - sessionStartTime)
+      : roundHistory.reduce((sum, r) => sum + r.recallDurationMs, 0);
 
   return {
     gameId: 'memory-matrix',

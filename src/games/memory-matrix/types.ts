@@ -65,6 +65,7 @@ export interface GameState {
   roundStartTime: number;
   recallStartTime: number;
   sessionStartTime: number;
+  pausedAt: number | null;
   roundHistory: RoundResult[];
   sessionStats: MemoryMatrixSessionStats | null;
 }
@@ -75,6 +76,6 @@ export type GameAction =
   | { type: 'START_RECALL'; timestamp?: number }
   | { type: 'TAP_TILE'; tileIndex: number; timestamp?: number }
   | { type: 'END_ROUND_FEEDBACK'; timestamp?: number }
-  | { type: 'PAUSE_GAME' }
-  | { type: 'RESUME_GAME' }
+  | { type: 'PAUSE_GAME'; timestamp?: number }
+  | { type: 'RESUME_GAME'; timestamp?: number }
   | { type: 'RESTART_GAME'; timestamp?: number };

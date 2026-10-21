@@ -129,8 +129,17 @@ export const ml: Translations = {
     accuracyLabel: 'കൃത്യതാനിരക്ക്',
     highestLevelLabel: 'ഉയർന്ന ലെവൽ',
     perfectRoundsLabel: 'പൂർണ്ണ റൗണ്ടുകൾ',
+    roundsPlayedLabel: 'പൂർത്തിയാക്കിയ റൗണ്ടുകൾ',
     playAgainCta: 'വീണ്ടും കളിക്കുക',
     finishCta: 'പൂർത്തിയാക്കുക',
+    keepPlayingCta: 'തുടർന്നു കളിക്കുക',
+    exitSessionCta: 'പുറത്തുകടക്കുക',
+    scoreSubtitle: 'വിഷ്വോസ്പേഷ്യൽ സ്കോർ പോയിന്റുകൾ',
+    countdownHint: 'പ്രകാശിക്കുന്ന മാതൃക ഓർത്തു വെയ്ക്കാൻ തയ്യാറാവുക!',
+    perfectFeedbackSub: 'പോയിന്റുകൾ ലഭിച്ചു!',
+    failedFeedbackSub: 'വിട്ടുപോയ മാതൃകകൾ കാണിക്കുന്നു...',
+    sessionCompleteSubtitle: 'അഭിനന്ദനങ്ങൾ! നിങ്ങൾ 10 റൗണ്ടുകളും വിജയകരമായി പൂർത്തിയാക്കി.',
+    gameOverSubtitle: 'നിങ്ങളുടെ ഓർമ്മശക്തിയുടെ നിലവിലെ പരിധി പരീക്ഷിച്ചു. താഴെ വിവരങ്ങൾ കാണുക.',
   },
 };
 

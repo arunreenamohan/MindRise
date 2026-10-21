@@ -39,6 +39,7 @@ export function createInitialGameState(initialLevel = DEFAULT_INITIAL_LEVEL): Ga
     roundStartTime: 0,
     recallStartTime: 0,
     sessionStartTime: 0,
+    pausedAt: null,
     roundHistory: [],
     sessionStats: null,
   };
@@ -68,6 +69,7 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         phase: 'preview',
+        sessionStartTime: state.sessionStartTime === 0 ? now : state.sessionStartTime,
         gridSize: levelConfig.gridSize,
         targetIndices: [...action.targetIndices],
         previewDurationMs: action.previewDurationMs,
@@ -219,10 +221,13 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
       const isSessionComplete = state.currentRound >= state.totalRounds;
 
       if (isGameOver || isSessionComplete) {
+        const now = action.timestamp ?? Date.now();
         const stats = computeSessionStats(
           state.roundHistory,
           state.totalRounds,
-          state.sessionStartTime
+          state.sessionStartTime,
+          new Date(now).toISOString(),
+          now
         );
         return {
           ...state,
@@ -253,11 +258,18 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'PAUSE_GAME': {
-      if (state.phase === 'preview' || state.phase === 'recall') {
+      if (
+        state.phase === 'countdown' ||
+        state.phase === 'preview' ||
+        state.phase === 'recall' ||
+        state.phase === 'round-feedback'
+      ) {
+        const now = action.timestamp ?? Date.now();
         return {
           ...state,
           previousPhase: state.phase,
           phase: 'paused',
+          pausedAt: now,
         };
       }
       return state;
@@ -265,10 +277,26 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
 
     case 'RESUME_GAME': {
       if (state.phase === 'paused' && state.previousPhase) {
+        const now = action.timestamp ?? Date.now();
+        const pauseDuration = state.pausedAt ? Math.max(0, now - state.pausedAt) : 0;
+
+        const adjustedRecallStartTime =
+          state.previousPhase === 'recall' && state.recallStartTime > 0
+            ? state.recallStartTime + pauseDuration
+            : state.recallStartTime;
+
+        const adjustedRoundStartTime =
+          state.roundStartTime > 0
+            ? state.roundStartTime + pauseDuration
+            : state.roundStartTime;
+
         return {
           ...state,
           phase: state.previousPhase,
           previousPhase: null,
+          pausedAt: null,
+          recallStartTime: adjustedRecallStartTime,
+          roundStartTime: adjustedRoundStartTime,
         };
       }
       return state;
@@ -277,14 +305,11 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
     case 'RESTART_GAME': {
       const now = action.timestamp ?? Date.now();
       const initial = createInitialGameState(DEFAULT_INITIAL_LEVEL);
-      const levelConfig = getLevelConfig(DEFAULT_INITIAL_LEVEL);
       return {
         ...initial,
-        phase: 'preview',
+        phase: 'countdown',
         sessionStartTime: now,
         roundStartTime: now,
-        gridSize: levelConfig.gridSize,
-        previewDurationMs: levelConfig.previewDurationMs,
       };
     }
 
