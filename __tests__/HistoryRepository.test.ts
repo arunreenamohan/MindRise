@@ -673,6 +673,61 @@ describe('HistoryRepository', () => {
     expect(ffStats.avgFindTimeMs).toBe(1090); // Math.round((1200 + 980) / 2)
   });
 
+  it('aggregates Pattern Master sessions and calculates average response time metrics', async () => {
+    const pmRecord1: GameSessionRecord = {
+      id: 'session_pm_001',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'pattern-master',
+      startedAt: '2026-10-21T14:00:00.000Z',
+      completedAt: '2026-10-21T14:02:10.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 5600,
+      accuracyPercentage: 80,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 5,
+      durationMs: 130000,
+      gameSpecificMetrics: {
+        avgResponseTimeMs: 4200,
+      },
+    };
+
+    const pmRecord2: GameSessionRecord = {
+      id: 'session_pm_002',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'pattern-master',
+      startedAt: '2026-10-21T15:00:00.000Z',
+      completedAt: '2026-10-21T15:02:00.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 6800,
+      accuracyPercentage: 100,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 6,
+      durationMs: 120000,
+      gameSpecificMetrics: {
+        avgResponseTimeMs: 3400,
+      },
+    };
+
+    await historyRepository.saveSession(pmRecord1);
+    await historyRepository.saveSession(pmRecord2);
+
+    const sessions = await historyRepository.getSessions();
+    expect(sessions).toHaveLength(2);
+
+    const summary = await historyRepository.getHistorySummary();
+    const pmStats = summary.gameStats['pattern-master'];
+    expect(pmStats).toBeDefined();
+    expect(pmStats.sessionsCount).toBe(2);
+    expect(pmStats.highestScore).toBe(6800);
+    expect(pmStats.highestLevel).toBe(6);
+    expect(pmStats.avgAccuracy).toBe(90); // (80 + 100) / 2
+    expect(pmStats.avgResponseTimeMs).toBe(3800); // Math.round((4200 + 3400) / 2)
+  });
+
   it('clears history completely', async () => {
     await historyRepository.saveSession(sampleMMRecord);
     expect(await historyRepository.getSessions()).toHaveLength(1);

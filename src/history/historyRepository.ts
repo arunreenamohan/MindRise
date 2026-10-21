@@ -369,7 +369,10 @@ class HistoryRepository {
           maxDigitSpan: gameId === 'number-recall' ? maxDigitSpan : undefined,
           bestReactionMs: gameId === 'quick-reaction' ? bestReactionMs : undefined,
           avgReactionMs: gameId === 'quick-reaction' ? overallAvgReactionMs : undefined,
-          avgResponseTimeMs: gameId === 'logic-quest' ? overallAvgLogicMs : undefined,
+          avgResponseTimeMs:
+            gameId === 'logic-quest' || gameId === 'pattern-master'
+              ? overallAvgLogicMs
+              : undefined,
           bestFindTimeMs: gameId === 'focus-finder' ? bestFindTimeMs : undefined,
           avgFindTimeMs: gameId === 'focus-finder' ? overallAvgFindMs : undefined,
         };

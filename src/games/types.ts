@@ -14,6 +14,7 @@ export type GameStatus =
   | 'ready-phase5'
   | 'ready-phase6'
   | 'ready-phase7'
+  | 'ready-phase8'
   | 'in-development';
 
 export interface GameParameterSpecs {

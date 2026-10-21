@@ -9,6 +9,7 @@ import { NumberRecallGameScreen } from '../screens/NumberRecallGameScreen';
 import { QuickReactionGameScreen } from '../screens/QuickReactionGameScreen';
 import { LogicQuestGameScreen } from '../screens/LogicQuestGameScreen';
 import { FocusFinderGameScreen } from '../screens/FocusFinderGameScreen';
+import { PatternMasterGameScreen } from '../screens/PatternMasterGameScreen';
 import { useTheme } from '../theme/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -69,6 +70,14 @@ export const RootNavigator: React.FC = () => {
       <Stack.Screen
         name="FocusFinderGame"
         component={FocusFinderGameScreen}
+        options={{
+          presentation: 'card',
+          animation: 'fade_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="PatternMasterGame"
+        component={PatternMasterGameScreen}
         options={{
           presentation: 'card',
           animation: 'fade_from_bottom',

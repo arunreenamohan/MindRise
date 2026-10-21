@@ -19,6 +19,7 @@ import {
   GridIcon,
   LayersIcon,
   ZapIcon,
+  CpuIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
@@ -83,6 +84,8 @@ export const ProgressScreen: React.FC = () => {
         return <BrainIcon size={20} color={colors.primaryLight} />;
       case 'focus-finder':
         return <TargetIcon size={20} color={colors.attention} />;
+      case 'pattern-master':
+        return <CpuIcon size={20} color={colors.problemSolving} />;
       default:
         return <BrainIcon size={20} color={colors.primaryLight} />;
     }
@@ -100,6 +103,8 @@ export const ProgressScreen: React.FC = () => {
         return t.logicQuest.gameTitle;
       case 'focus-finder':
         return t.focusFinder.gameTitle;
+      case 'pattern-master':
+        return t.patternMaster.gameTitle;
       default:
         return gameId;
     }
@@ -489,9 +494,57 @@ export const ProgressScreen: React.FC = () => {
             </View>
           </View>
         </Card>
+
+        {/* Pattern Master Breakdown */}
+        <Card variant="elevated" style={styles.gameStatsCard}>
+          <View style={styles.gameStatsHeader}>
+            <View style={styles.gameStatsTitleGroup}>
+              <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(245, 158, 11, 0.16)' }]}>
+                <CpuIcon size={20} color={colors.problemSolving} />
+              </View>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 10 }]}>
+                {t.patternMaster.gameTitle}
+              </Text>
+            </View>
+            <StatBadge
+              label={`${summary?.gameStats['pattern-master']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              variant="primary"
+              size="sm"
+            />
+          </View>
+
+          <View style={[styles.gameMetricsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
+              <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
+                {summary?.gameStats['pattern-master']?.highestScore.toLocaleString() ?? '0'}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
+              <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
+                {summary?.gameStats['pattern-master']?.avgAccuracy ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
+              <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
+                Lvl {summary?.gameStats['pattern-master']?.highestLevel ?? 1}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgTimeLabel}</Text>
+              <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
+                {summary?.gameStats['pattern-master']?.avgResponseTimeMs !== undefined
+                  ? `${(summary.gameStats['pattern-master'].avgResponseTimeMs / 1000).toFixed(1)}s`
+                  : '--'}
+              </Text>
+            </View>
+          </View>
+        </Card>
       </View>
 
-      {/* Roadmap Drills Header */}
+      {/* Full Suite Status Header */}
       <View style={styles.sectionHeader}>
         <Text style={[typography.h3, { color: colors.textPrimary }]}>
           {t.progress.roadmapDrillsTitle}
@@ -500,8 +553,8 @@ export const ProgressScreen: React.FC = () => {
 
       <Card variant="outlined" style={styles.roadmapCard}>
         <View style={styles.roadmapRow}>
-          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Pattern Master (Visual Logic)</Text>
-          <StatBadge label="ROADMAP" variant="primary" size="sm" />
+          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>All 6 Cognitive Drills Active</Text>
+          <StatBadge label="6/6 READY" variant="success" size="sm" />
         </View>
       </Card>
 

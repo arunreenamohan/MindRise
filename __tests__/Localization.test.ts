@@ -123,4 +123,37 @@ describe('MindRise Localization (EN & ML)', () => {
     const mlFfKeys = Object.keys(ml.focusFinder).sort();
     expect(enFfKeys).toEqual(mlFfKeys);
   });
+
+  it('provides complete Pattern Master translations in English and Malayalam', () => {
+    expect(en.patternMaster.gameTitle).toBe('Pattern Master');
+    expect(ml.patternMaster.gameTitle).toBe('പാറ്റേൺ മാസ്റ്റർ');
+
+    expect(en.patternMaster.selectPrompt).toBe('Select the matching rule candidate:');
+    expect(ml.patternMaster.selectPrompt).toBeTruthy();
+
+    expect(en.patternMaster.submitCta).toBe('Submit Answer');
+    expect(ml.patternMaster.submitCta).toBeTruthy();
+
+    expect(en.patternMaster.correctFeedback).toBe('Pattern rule deduced correctly!');
+    expect(ml.patternMaster.correctFeedback).toBeTruthy();
+
+    expect(en.patternMaster.incorrectFeedback).toBe('Not quite the matching pattern.');
+    expect(ml.patternMaster.incorrectFeedback).toBeTruthy();
+
+    expect(en.patternMaster.sessionCompleteTitle).toBe('Session Complete!');
+    expect(ml.patternMaster.sessionCompleteTitle).toBeTruthy();
+
+    expect(en.patternMaster.categoryVisualPattern).toBe('Shape Pattern');
+    expect(ml.patternMaster.categoryVisualPattern).toBeTruthy();
+
+    expect(en.patternMaster.categoryNumberSequence).toBe('Number Sequence');
+    expect(ml.patternMaster.categoryNumberSequence).toBeTruthy();
+
+    expect(en.patternMaster.categoryMissingTile).toBe('Missing Tile');
+    expect(ml.patternMaster.categoryMissingTile).toBeTruthy();
+
+    const enPmKeys = Object.keys(en.patternMaster).sort();
+    const mlPmKeys = Object.keys(ml.patternMaster).sort();
+    expect(enPmKeys).toEqual(mlPmKeys);
+  });
 });

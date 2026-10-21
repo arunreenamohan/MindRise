@@ -40,7 +40,8 @@ export const GameIntroScreen: React.FC = () => {
     game.id === 'number-recall' ||
     game.id === 'quick-reaction' ||
     game.id === 'logic-quest' ||
-    game.id === 'focus-finder';
+    game.id === 'focus-finder' ||
+    game.id === 'pattern-master';
   const accentColor = colors[game.accentColorKey] || colors.primary;
 
   const getGameIcon = (id: string, color: string) => {
@@ -72,6 +73,8 @@ export const GameIntroScreen: React.FC = () => {
       (navigation as any).navigate('LogicQuestGame');
     } else if (game.id === 'focus-finder') {
       (navigation as any).navigate('FocusFinderGame');
+    } else if (game.id === 'pattern-master') {
+      (navigation as any).navigate('PatternMasterGame');
     } else {
       setModalVisible(true);
     }

@@ -63,6 +63,7 @@ describe('MindRise Game Domain & Registry', () => {
     const readyPhase5Games = GAMES_LIST.filter((g) => g.status === 'ready-phase5');
     const readyPhase6Games = GAMES_LIST.filter((g) => g.status === 'ready-phase6');
     const readyPhase7Games = GAMES_LIST.filter((g) => g.status === 'ready-phase7');
+    const readyPhase8Games = GAMES_LIST.filter((g) => g.status === 'ready-phase8');
     const inDevelopmentGames = GAMES_LIST.filter((g) => g.status === 'in-development');
 
     // Exactly 1 flagship game prepared for Phase 2 implementation
@@ -85,13 +86,16 @@ describe('MindRise Game Domain & Registry', () => {
     expect(readyPhase7Games).toHaveLength(1);
     expect(readyPhase7Games[0].id).toBe('focus-finder');
 
-    // Exactly 1 game in development for subsequent milestones (pattern-master)
-    expect(inDevelopmentGames).toHaveLength(1);
-    expect(inDevelopmentGames[0].id).toBe('pattern-master');
+    // Exactly 1 game prepared for Phase 8 implementation (pattern-master)
+    expect(readyPhase8Games).toHaveLength(1);
+    expect(readyPhase8Games[0].id).toBe('pattern-master');
 
-    // No game should claim full production release before implementation
+    // All 6 games from the initial lineup are now ready
+    expect(inDevelopmentGames).toHaveLength(0);
+
+    // All games have verified ready status
     GAMES_LIST.forEach((g) => {
-      expect(['ready-phase2', 'ready-phase3', 'ready-phase5', 'ready-phase6', 'ready-phase7', 'in-development']).toContain(g.status);
+      expect(['ready-phase2', 'ready-phase3', 'ready-phase5', 'ready-phase6', 'ready-phase7', 'ready-phase8']).toContain(g.status);
     });
   });
 
