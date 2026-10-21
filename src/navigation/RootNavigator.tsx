@@ -5,6 +5,7 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { AppTabNavigator } from './AppTabNavigator';
 import { GameIntroScreen } from '../screens/GameIntroScreen';
 import { MemoryMatrixGameScreen } from '../screens/MemoryMatrixGameScreen';
+import { NumberRecallGameScreen } from '../screens/NumberRecallGameScreen';
 import { useTheme } from '../theme/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -33,6 +34,14 @@ export const RootNavigator: React.FC = () => {
       <Stack.Screen
         name="MemoryMatrixGame"
         component={MemoryMatrixGameScreen}
+        options={{
+          presentation: 'card',
+          animation: 'fade_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="NumberRecallGame"
+        component={NumberRecallGameScreen}
         options={{
           presentation: 'card',
           animation: 'fade_from_bottom',

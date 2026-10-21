@@ -119,7 +119,7 @@ export const TrainScreen: React.FC = () => {
       <View style={styles.gamesList}>
         {filteredGames.map((game) => {
           const accentColor = colors[game.accentColorKey] || colors.primary;
-          const isPhase2 = game.status === 'ready-phase2';
+          const isPlayable = game.status === 'ready-phase2' || game.status === 'ready-phase3';
 
           return (
             <Card
@@ -137,12 +137,12 @@ export const TrainScreen: React.FC = () => {
                   <View style={styles.badgeRow}>
                     <StatBadge
                       label={game.categoryLabel.toUpperCase()}
-                      variant={isPhase2 ? 'primary' : 'neutral'}
+                      variant={isPlayable ? 'primary' : 'neutral'}
                       size="sm"
                     />
                     <StatBadge
-                      label={isPhase2 ? t.common.ready : t.common.comingSoon}
-                      variant={isPhase2 ? 'success' : 'locked'}
+                      label={isPlayable ? t.common.ready : t.common.comingSoon}
+                      variant={isPlayable ? 'success' : 'locked'}
                       size="sm"
                       style={styles.statusBadge}
                     />
@@ -167,10 +167,10 @@ export const TrainScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.actionRow}>
-                  <Text style={[typography.label, { color: isPhase2 ? colors.primaryLight : colors.textSecondary }]}>
-                    {isPhase2 ? t.train.playDrill : t.train.previewDrill}
+                  <Text style={[typography.label, { color: isPlayable ? colors.primaryLight : colors.textSecondary }]}>
+                    {isPlayable ? t.train.playDrill : t.train.previewDrill}
                   </Text>
-                  <ChevronRightIcon size={16} color={isPhase2 ? colors.primaryLight : colors.textSecondary} />
+                  <ChevronRightIcon size={16} color={isPlayable ? colors.primaryLight : colors.textSecondary} />
                 </View>
               </View>
             </Card>

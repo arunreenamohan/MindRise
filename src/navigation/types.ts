@@ -13,5 +13,6 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   GameIntro: { gameId: GameId };
   MemoryMatrixGame: undefined;
+  NumberRecallGame: undefined;
 };
 

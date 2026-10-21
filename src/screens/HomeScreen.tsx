@@ -12,8 +12,8 @@ import {
   BrainIcon,
   FlameIcon,
   ZapIcon,
-  TargetIcon,
   GridIcon,
+  LayersIcon,
   SparklesIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
@@ -144,23 +144,23 @@ export const HomeScreen: React.FC = () => {
           </Text>
         </Card>
 
-        {/* Quick Item 2: Focus Finder */}
+        {/* Quick Item 2: Number Recall */}
         <Card
           variant="elevated"
-          onPress={() => handleOpenGame('focus-finder')}
+          onPress={() => handleOpenGame('number-recall')}
           style={styles.quickCard}
         >
           <View style={styles.quickCardHeader}>
-            <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(0, 212, 178, 0.16)' }]}>
-              <TargetIcon size={22} color={colors.attention} />
+            <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(245, 158, 11, 0.16)' }]}>
+              <LayersIcon size={22} color={colors.memory} />
             </View>
-            <StatBadge label="PHASE 3" variant="neutral" size="sm" />
+            <StatBadge label="PHASE 3" variant="primary" size="sm" />
           </View>
           <Text style={[typography.h3, { color: colors.textPrimary, marginTop: 12 }]}>
-            Focus Finder
+            Number Recall
           </Text>
           <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 4 }]} numberOfLines={2}>
-            Visual anomaly search
+            Digit sequence recall
           </Text>
         </Card>
       </View>

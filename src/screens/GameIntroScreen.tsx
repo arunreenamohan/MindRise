@@ -35,9 +35,8 @@ export const GameIntroScreen: React.FC = () => {
 
   const gameId = route.params?.gameId;
   const game = (gameId ? getGameById(gameId) : undefined) || getGameById('memory-matrix')!;
-  const isPhase2Ready = game.status === 'ready-phase2';
+  const isPlayable = game.id === 'memory-matrix' || game.id === 'number-recall';
   const accentColor = colors[game.accentColorKey] || colors.primary;
-
 
   const getGameIcon = (id: string, color: string) => {
     switch (id) {
@@ -57,11 +56,11 @@ export const GameIntroScreen: React.FC = () => {
     }
   };
 
-  const isMemoryMatrix = game.id === 'memory-matrix';
-
   const handleStartSession = () => {
-    if (isMemoryMatrix) {
+    if (game.id === 'memory-matrix') {
       (navigation as any).navigate('MemoryMatrixGame');
+    } else if (game.id === 'number-recall') {
+      (navigation as any).navigate('NumberRecallGame');
     } else {
       setModalVisible(true);
     }
@@ -74,8 +73,8 @@ export const GameIntroScreen: React.FC = () => {
         onBack={() => navigation.goBack()}
         rightElement={
           <StatBadge
-            label={isPhase2Ready ? t.common.ready : t.common.comingSoon}
-            variant={isPhase2Ready ? 'success' : 'locked'}
+            label={isPlayable ? t.common.ready : t.common.comingSoon}
+            variant={isPlayable ? 'success' : 'locked'}
           />
         }
       />
@@ -183,19 +182,19 @@ export const GameIntroScreen: React.FC = () => {
         style={[
           styles.noticeCard,
           {
-            backgroundColor: isPhase2Ready ? 'rgba(124, 92, 252, 0.08)' : 'rgba(100, 116, 139, 0.08)',
-            borderColor: isPhase2Ready ? colors.primaryLight : colors.border,
+            backgroundColor: isPlayable ? 'rgba(124, 92, 252, 0.08)' : 'rgba(100, 116, 139, 0.08)',
+            borderColor: isPlayable ? colors.primaryLight : colors.border,
           },
         ]}
       >
         <View style={styles.noticeRow}>
-          <ShieldCheckIcon size={22} color={isPhase2Ready ? colors.primaryLight : colors.textMuted} />
+          <ShieldCheckIcon size={22} color={isPlayable ? colors.primaryLight : colors.textMuted} />
           <View style={styles.noticeContent}>
             <Text style={[typography.label, { color: colors.textPrimary }]}>
               {t.gameIntro.statusNoticeTitle}
             </Text>
             <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 4 }]}>
-              {isPhase2Ready ? t.gameIntro.phase2ReadyNote : t.gameIntro.notPlayableYet}
+              {isPlayable ? t.gameIntro.phase2ReadyNote : t.gameIntro.notPlayableYet}
             </Text>
           </View>
         </View>
