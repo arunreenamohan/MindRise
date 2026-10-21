@@ -57,8 +57,14 @@ export const GameIntroScreen: React.FC = () => {
     }
   };
 
+  const isMemoryMatrix = game.id === 'memory-matrix';
+
   const handleStartSession = () => {
-    setModalVisible(true);
+    if (isMemoryMatrix) {
+      (navigation as any).navigate('MemoryMatrixGame');
+    } else {
+      setModalVisible(true);
+    }
   };
 
   return (
@@ -198,7 +204,7 @@ export const GameIntroScreen: React.FC = () => {
       {/* Start Button */}
       <View style={styles.bottomCta}>
         <Button
-          title={isPhase2Ready ? 'Launch Phase 2 Preview' : t.gameIntro.startDrill}
+          title={t.gameIntro.startDrill}
           onPress={handleStartSession}
           variant="primary"
           size="lg"
@@ -215,8 +221,8 @@ export const GameIntroScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <Card variant="elevated" style={styles.modalContent}>
-            <View style={[styles.modalIconCircle, { backgroundColor: isPhase2Ready ? colors.primaryMuted : 'rgba(100, 116, 139, 0.18)' }]}>
-              <BrainIcon size={38} color={isPhase2Ready ? colors.primaryLight : colors.textSecondary} />
+            <View style={[styles.modalIconCircle, { backgroundColor: 'rgba(100, 116, 139, 0.18)' }]}>
+              <BrainIcon size={38} color={colors.textSecondary} />
             </View>
 
             <Text style={[typography.h2, styles.modalTitle, { color: colors.textPrimary }]}>
@@ -224,15 +230,13 @@ export const GameIntroScreen: React.FC = () => {
             </Text>
 
             <StatBadge
-              label={isPhase2Ready ? 'PHASE 2 TARGET MILESTONE' : 'PHASE 3 ROADMAP'}
-              variant={isPhase2Ready ? 'primary' : 'locked'}
+              label="IN ACTIVE DEVELOPMENT"
+              variant="locked"
               style={styles.modalBadge}
             />
 
             <Text style={[typography.bodyMedium, styles.modalBody, { color: colors.textSecondary }]}>
-              {isPhase2Ready
-                ? 'Phase 1 UI and architecture verified! Next up is Milestone Phase 2: Building full interactive gameplay, scoring algorithms, and persistence for Memory Matrix.'
-                : `${game.defaultName} is scheduled for Phase 3. The architecture, parameters, and game registry are configured and ready.`}
+              {t.gameIntro.modalMessage}
             </Text>
 
             <Button

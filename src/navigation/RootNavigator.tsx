@@ -4,6 +4,7 @@ import { RootStackParamList } from './types';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { AppTabNavigator } from './AppTabNavigator';
 import { GameIntroScreen } from '../screens/GameIntroScreen';
+import { MemoryMatrixGameScreen } from '../screens/MemoryMatrixGameScreen';
 import { useTheme } from '../theme/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -27,6 +28,14 @@ export const RootNavigator: React.FC = () => {
         component={GameIntroScreen}
         options={{
           presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="MemoryMatrixGame"
+        component={MemoryMatrixGameScreen}
+        options={{
+          presentation: 'card',
+          animation: 'fade_from_bottom',
         }}
       />
     </Stack.Navigator>

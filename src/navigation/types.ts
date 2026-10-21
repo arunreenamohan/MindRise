@@ -12,5 +12,6 @@ export type RootStackParamList = {
   Onboarding: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   GameIntro: { gameId: GameId };
+  MemoryMatrixGame: undefined;
 };
 

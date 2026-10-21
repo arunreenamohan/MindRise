@@ -45,4 +45,19 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
       expect(typeof key).toBe('string');
     });
   });
+
+  it('verifies RootStackParamList supports MemoryMatrixGame route with undefined params', () => {
+    const routeName: keyof RootStackParamList = 'MemoryMatrixGame';
+    expect(routeName).toBe('MemoryMatrixGame');
+
+    const stackRoutes: (keyof RootStackParamList)[] = [
+      'Onboarding',
+      'MainTabs',
+      'GameIntro',
+      'MemoryMatrixGame',
+    ];
+    expect(stackRoutes).toContain('MemoryMatrixGame');
+    expect(stackRoutes).toContain('GameIntro');
+    expect(stackRoutes).toHaveLength(4);
+  });
 });
