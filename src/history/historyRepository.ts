@@ -21,6 +21,8 @@ export const MAX_STORED_SESSIONS = 300;
 class HistoryRepository {
   private memoryCache: GameSessionRecord[] | null = null;
   private writeQueue: Promise<unknown> = Promise.resolve();
+  private preservedUnknownRecords: unknown[] = [];
+  private storageLoadError: boolean = false;
 
   /**
    * Generates a unique, collision-resistant session ID.
@@ -42,6 +44,11 @@ class HistoryRepository {
     const item = raw as Partial<GameSessionRecord>;
 
     if (typeof item.id !== 'string' || item.id.trim().length === 0) {
+      return null;
+    }
+
+    // Do not validate or downgrade records from unsupported future schema versions
+    if (typeof item.schemaVersion === 'number' && item.schemaVersion > CURRENT_SCHEMA_VERSION) {
       return null;
     }
 
@@ -112,15 +119,20 @@ class HistoryRepository {
     try {
       if (this.memoryCache === null) {
         const stored = await AsyncStorage.getItem(HISTORY_STORAGE_KEY);
+        this.storageLoadError = false;
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
             if (Array.isArray(parsed)) {
               const validRecords: GameSessionRecord[] = [];
+              const unknownRecords: unknown[] = [];
               for (const raw of parsed) {
                 const validated = this.validateRecord(raw);
                 if (validated) {
                   validRecords.push(validated);
+                } else if (raw && typeof raw === 'object' && 'id' in raw) {
+                  // Preserve future schema or unvalidated records to avoid data loss on resave
+                  unknownRecords.push(raw);
                 }
               }
               // Sort descending by completion timestamp
@@ -128,15 +140,21 @@ class HistoryRepository {
                 (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
               );
               this.memoryCache = validRecords;
+              this.preservedUnknownRecords = unknownRecords;
             } else {
               this.memoryCache = [];
+              this.preservedUnknownRecords = [];
             }
           } catch {
-            // Corrupted JSON payload -> reset safely
+            // Corrupted JSON payload -> do NOT silently destroy recoverable data.
+            // Backup raw string to quarantine key before resetting memory cache.
+            AsyncStorage.setItem(`${HISTORY_STORAGE_KEY}_corrupt_backup`, stored).catch(() => {});
             this.memoryCache = [];
+            this.preservedUnknownRecords = [];
           }
         } else {
           this.memoryCache = [];
+          this.preservedUnknownRecords = [];
         }
       }
 
@@ -146,7 +164,8 @@ class HistoryRepository {
       }
       return [...sessions];
     } catch {
-      // In case of storage failure, return in-memory cache or empty array without crashing
+      // Storage read failure: flag error so subsequent saveSession won't overwrite existing disk data
+      this.storageLoadError = true;
       return this.memoryCache ? [...this.memoryCache] : [];
     }
   }
@@ -163,35 +182,12 @@ class HistoryRepository {
 
     // Sequence execution through the write queue to prevent race conditions
     return new Promise<boolean>((resolve) => {
-      this.writeQueue = this.writeQueue
-        .then(async () => {
-          try {
-            const currentSessions = await this.getSessions();
+      const executeWrite = async () => {
+        try {
+          const currentSessions = await this.getSessions();
 
-            // Deduplication check by session ID
-            const existingIndex = currentSessions.findIndex((s) => s.id === validated.id);
-            let nextSessions: GameSessionRecord[];
-
-            if (existingIndex >= 0) {
-              // Update existing record rather than duplicating
-              nextSessions = [...currentSessions];
-              nextSessions[existingIndex] = validated;
-            } else {
-              // Prepend newly completed session
-              nextSessions = [validated, ...currentSessions];
-            }
-
-            // Cap stored items to prevent unbounded storage inflation
-            if (nextSessions.length > MAX_STORED_SESSIONS) {
-              nextSessions = nextSessions.slice(0, MAX_STORED_SESSIONS);
-            }
-
-            // Write to persistent storage
-            await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextSessions));
-            this.memoryCache = nextSessions;
-            resolve(true);
-          } catch {
-            // If persistent write failed, still update in-memory cache so current app session stays responsive
+          if (this.storageLoadError) {
+            // Abort persistent write if initial storage read failed, preventing data destruction
             if (this.memoryCache) {
               const existingIndex = this.memoryCache.findIndex((s) => s.id === validated.id);
               if (existingIndex >= 0) {
@@ -201,8 +197,55 @@ class HistoryRepository {
               }
             }
             resolve(false);
+            return;
           }
-        })
+
+          // Deduplication check by session ID
+          const existingIndex = currentSessions.findIndex((s) => s.id === validated.id);
+          let nextSessions: GameSessionRecord[];
+
+          if (existingIndex >= 0) {
+            // Update existing record rather than duplicating
+            nextSessions = [...currentSessions];
+            nextSessions[existingIndex] = validated;
+          } else {
+            // Prepend newly completed session
+            nextSessions = [validated, ...currentSessions];
+          }
+
+          // Ensure sorted descending by completion timestamp
+          nextSessions.sort(
+            (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+          );
+
+          // Cap stored items to prevent unbounded storage inflation
+          if (nextSessions.length > MAX_STORED_SESSIONS) {
+            nextSessions = nextSessions.slice(0, MAX_STORED_SESSIONS);
+          }
+
+          // Retain preserved future records alongside v1 records
+          const persistentPayload = [...nextSessions, ...this.preservedUnknownRecords];
+
+          // Write to persistent storage
+          await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(persistentPayload));
+          this.memoryCache = nextSessions;
+          resolve(true);
+        } catch {
+          // If persistent write failed, still update in-memory cache so current app session stays responsive
+          if (this.memoryCache) {
+            const existingIndex = this.memoryCache.findIndex((s) => s.id === validated.id);
+            if (existingIndex >= 0) {
+              this.memoryCache[existingIndex] = validated;
+            } else {
+              this.memoryCache.unshift(validated);
+            }
+          }
+          resolve(false);
+        }
+      };
+
+      this.writeQueue = this.writeQueue
+        .then(executeWrite, executeWrite)
         .catch(() => {
           resolve(false);
         });
@@ -317,6 +360,8 @@ class HistoryRepository {
   public resetCacheForTesting(): void {
     this.memoryCache = null;
     this.writeQueue = Promise.resolve();
+    this.preservedUnknownRecords = [];
+    this.storageLoadError = false;
   }
 }
 

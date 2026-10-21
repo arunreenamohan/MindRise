@@ -4,6 +4,7 @@ import {
   getLocalDateKey,
   getDaysDifference,
   calculateStreak,
+  calculateDrillPerformanceIndex,
   GameSessionRecord,
   CURRENT_SCHEMA_VERSION,
 } from '../src/history';
@@ -113,6 +114,46 @@ describe('Streak Calculator & Date Utilities', () => {
       const result = calculateStreak(dates, refDate);
       expect(result.currentStreak).toBe(2);
       expect(result.bestStreak).toBe(4);
+    });
+
+    it('remains active when user travels westward or clock shifts where todayKey is slightly behind latestTrained', () => {
+      // User trained on 2026-10-22 (in Tokyo or forward timezone), device in Honolulu says today is 2026-10-21
+      const result = calculateStreak(['2026-10-21', '2026-10-22'], new Date(2026, 9, 21));
+      expect(result.currentStreak).toBe(2);
+      expect(result.bestStreak).toBe(2);
+    });
+  });
+
+  describe('calculateDrillPerformanceIndex', () => {
+    it('returns null for uncalibrated history (0 workouts)', () => {
+      expect(calculateDrillPerformanceIndex(0, 0)).toBeNull();
+      expect(calculateDrillPerformanceIndex(500, 0)).toBeNull();
+      expect(calculateDrillPerformanceIndex(500, -1)).toBeNull();
+      expect(calculateDrillPerformanceIndex(NaN, 0)).toBeNull();
+    });
+
+    it('returns 0 when total score is 0 or negative with positive workouts', () => {
+      expect(calculateDrillPerformanceIndex(0, 3)).toBe(0);
+      expect(calculateDrillPerformanceIndex(-50, 2)).toBe(0);
+    });
+
+    it('computes exact average rounded to integer for single and multiple workouts', () => {
+      // 450 / 1 = 450
+      expect(calculateDrillPerformanceIndex(450, 1)).toBe(450);
+
+      // (450 + 680) / 2 = 1130 / 2 = 565
+      expect(calculateDrillPerformanceIndex(1130, 2)).toBe(565);
+
+      // 1000 / 3 = 333.33 -> 333
+      expect(calculateDrillPerformanceIndex(1000, 3)).toBe(333);
+
+      // 1004 / 3 = 334.66 -> 335
+      expect(calculateDrillPerformanceIndex(1004, 3)).toBe(335);
+    });
+
+    it('handles non-finite scores safely', () => {
+      expect(calculateDrillPerformanceIndex(Infinity, 2)).toBe(0);
+      expect(calculateDrillPerformanceIndex(NaN, 2)).toBe(0);
     });
   });
 });
@@ -285,22 +326,146 @@ describe('HistoryRepository', () => {
     expect(loaded[0].id).toBe('valid_one');
   });
 
-  it('safely handles invalid JSON in storage without throwing', async () => {
-    await AsyncStorage.setItem('@mindrise_session_history_v1', '{not-a-valid-json}');
+  it('safely handles invalid JSON in storage and creates quarantine backup', async () => {
+    const malformed = '{not-a-valid-json-string-content';
+    await AsyncStorage.setItem('@mindrise_session_history_v1', malformed);
     historyRepository.resetCacheForTesting();
 
     const loaded = await historyRepository.getSessions();
     expect(loaded).toEqual([]);
+
+    // Check that recoverable data was quarantined rather than wiped
+    const backup = await AsyncStorage.getItem('@mindrise_session_history_v1_corrupt_backup');
+    expect(backup).toBe(malformed);
   });
 
-  it('safely handles AsyncStorage read failures', async () => {
-    const originalGetItem = AsyncStorage.getItem;
-    (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Disk read error'));
+  it('rejects unsupported future schema versions in validateRecord', () => {
+    const futureRecord = {
+      ...sampleMMRecord,
+      schemaVersion: CURRENT_SCHEMA_VERSION + 1,
+    };
+    expect(historyRepository.validateRecord(futureRecord)).toBeNull();
+  });
+
+  it('preserves unknown/future schema records in storage without wiping them on resave', async () => {
+    const futureRecord = {
+      id: 'session_v2_future',
+      schemaVersion: 2,
+      gameId: 'memory-matrix',
+      customFutureField: 'advanced-analytics',
+    };
+    await AsyncStorage.setItem(
+      '@mindrise_session_history_v1',
+      JSON.stringify([futureRecord])
+    );
     historyRepository.resetCacheForTesting();
 
+    // v1 client should ignore future record for active v1 display
+    const loaded = await historyRepository.getSessions();
+    expect(loaded).toHaveLength(0);
+
+    // Saving a new session must not erase the preserved future record
+    await historyRepository.saveSession(sampleMMRecord);
+
+    const storedRaw = await AsyncStorage.getItem('@mindrise_session_history_v1');
+    const parsed = JSON.parse(storedRaw!);
+    expect(parsed).toHaveLength(2);
+    expect(parsed.some((r: any) => r.id === 'session_v2_future')).toBe(true);
+    expect(parsed.some((r: any) => r.id === sampleMMRecord.id)).toBe(true);
+  });
+
+  it('prevents persistent overwrite when storage read initially fails', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(async () => {
+      throw new Error('SQLite locked');
+    });
+    historyRepository.resetCacheForTesting();
+
+    // Attempting to read causes storageLoadError flag
+    const loaded = await historyRepository.getSessions();
+    expect(loaded).toEqual([]);
+
+    // saveSession should abort disk overwrite to avoid wiping existing database
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(async () => {
+      throw new Error('SQLite locked');
+    });
+    const saved = await historyRepository.saveSession(sampleMMRecord);
+    expect(saved).toBe(false);
+  });
+
+  it('write queue recovers and continues processing subsequent writes after an error', async () => {
+    // Force first write to reject
+    (AsyncStorage.setItem as jest.Mock).mockImplementationOnce(async () => {
+      throw new Error('Disk write error');
+    });
+
+    const result1 = await historyRepository.saveSession(sampleMMRecord);
+    expect(result1).toBe(false);
+
+    // Subsequent write must succeed without being blocked by previous rejection
+    const result2 = await historyRepository.saveSession(sampleNRRecord);
+    expect(result2).toBe(true);
+
     const sessions = await historyRepository.getSessions();
-    expect(sessions).toEqual([]);
-    AsyncStorage.getItem = originalGetItem;
+    expect(sessions.some((s) => s.id === sampleNRRecord.id)).toBe(true);
+  });
+
+  it('enforces 300-session limit by capping and discarding oldest sessions', async () => {
+    const baseTime = new Date('2026-10-01T00:00:00.000Z').getTime();
+    const records: GameSessionRecord[] = [];
+
+    // Generate 305 records
+    for (let i = 0; i < 305; i++) {
+      records.push({
+        id: `bulk_session_${i}`,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        gameId: 'memory-matrix',
+        startedAt: new Date(baseTime + i * 60000).toISOString(),
+        completedAt: new Date(baseTime + i * 60000 + 30000).toISOString(),
+        dateKey: '2026-10-01',
+        outcome: 'completed',
+        finalScore: 100 + i,
+        accuracyPercentage: 100,
+        roundsCompleted: 10,
+        totalRounds: 10,
+        highestLevel: 5,
+        durationMs: 30000,
+      });
+    }
+
+    // Seed storage with 300 records
+    await AsyncStorage.setItem(
+      '@mindrise_session_history_v1',
+      JSON.stringify(records.slice(0, 300))
+    );
+    historyRepository.resetCacheForTesting();
+
+    // Save one more session (bulk_session_304)
+    await historyRepository.saveSession(records[304]);
+
+    const sessions = await historyRepository.getSessions();
+    expect(sessions).toHaveLength(300);
+    // Newest session is present
+    expect(sessions[0].id).toBe('bulk_session_304');
+    // Oldest session (bulk_session_0) was trimmed
+    expect(sessions.some((s) => s.id === 'bulk_session_0')).toBe(false);
+  });
+
+  it('excludes abandoned sessions from qualifying summary stats and streaks', async () => {
+    const abandonedRecord: GameSessionRecord = {
+      ...sampleMMRecord,
+      id: 'session_abandoned_999',
+      outcome: 'abandoned',
+      finalScore: 50,
+      dateKey: '2026-10-21',
+    };
+
+    await historyRepository.saveSession(sampleMMRecord); // completed, score 450
+    await historyRepository.saveSession(abandonedRecord); // abandoned, score 50
+
+    const summary = await historyRepository.getHistorySummary();
+    // Only 1 qualifying workout
+    expect(summary.totalWorkouts).toBe(1);
+    expect(summary.totalScore).toBe(450);
   });
 
   it('clears history completely', async () => {

@@ -21,7 +21,12 @@ import {
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
-import { historyRepository, GameSessionRecord, HistorySummary } from '../history';
+import {
+  historyRepository,
+  GameSessionRecord,
+  HistorySummary,
+  calculateDrillPerformanceIndex,
+} from '../history';
 
 type ProgressScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Progress'>,
@@ -102,15 +107,11 @@ export const ProgressScreen: React.FC = () => {
   };
 
   const totalMinutes = summary ? Math.round(summary.totalDurationMs / 60000) : 0;
-  const memorySessionsCount =
-    (summary?.gameStats['memory-matrix']?.sessionsCount || 0) +
-    (summary?.gameStats['number-recall']?.sessionsCount || 0);
 
-  // Calibrated MindRise Index: derived from session scores scaled gracefully to 100-1000 range
-  const calibratedIndex =
-    summary && summary.totalWorkouts > 0
-      ? Math.min(1000, Math.round(300 + (summary.totalScore / summary.totalWorkouts) * 0.25))
-      : null;
+  // Transparent Drill Performance Index: average score across completed qualifying workouts
+  const performanceIndex = summary
+    ? calculateDrillPerformanceIndex(summary.totalScore, summary.totalWorkouts)
+    : null;
 
   return (
     <ScreenContainer scrollable={true} contentContainerStyle={styles.container}>
@@ -125,7 +126,13 @@ export const ProgressScreen: React.FC = () => {
           <Text style={[typography.bodyMedium, { color: colors.error }]}>
             {t.progress.errorLoading}
           </Text>
-          <TouchableOpacity onPress={loadProgressData} style={styles.retryBtn}>
+          <TouchableOpacity
+            onPress={loadProgressData}
+            style={styles.retryBtn}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={t.progress.retryCta}
+          >
             <Text style={[typography.label, { color: colors.primaryLight }]}>
               {t.progress.retryCta}
             </Text>
@@ -133,16 +140,16 @@ export const ProgressScreen: React.FC = () => {
         </Card>
       )}
 
-      {/* MindRise Index Hero Card */}
+      {/* Drill Performance Hero Card */}
       <Card variant="highlighted" style={styles.indexCard}>
         <View style={styles.indexHeaderRow}>
           <StatBadge
-            label={calibratedIndex ? 'CALIBRATED BASELINE' : 'COGNITIVE BASELINE'}
-            variant={calibratedIndex ? 'success' : 'primary'}
-            icon={<SparklesIcon size={12} color={calibratedIndex ? colors.success : colors.primaryLight} />}
+            label={performanceIndex !== null ? t.progress.indexHeroBadge : t.progress.indexUncalibratedBadge}
+            variant={performanceIndex !== null ? 'success' : 'primary'}
+            icon={<SparklesIcon size={12} color={performanceIndex !== null ? colors.success : colors.primaryLight} />}
           />
           <Text style={[typography.caption, { color: colors.textSecondary }]}>
-            INDEX RANGE: 0 - 1000
+            DRILL SCORE AVERAGE
           </Text>
         </View>
 
@@ -152,11 +159,11 @@ export const ProgressScreen: React.FC = () => {
               {t.progress.mindIndexTitle}
             </Text>
             <Text style={[typography.statNumber, { color: colors.textPrimary, marginTop: 4 }]}>
-              {calibratedIndex ? calibratedIndex : '---'}
+              {performanceIndex !== null ? performanceIndex.toLocaleString() : '---'}
             </Text>
             <Text style={[typography.bodySmall, { color: colors.textMuted, marginTop: 4 }]}>
-              {calibratedIndex
-                ? `${summary?.totalWorkouts} sessions calibrated`
+              {performanceIndex !== null
+                ? `${summary?.totalWorkouts} ${t.progress.statWorkouts.toLowerCase()}`
                 : t.progress.mindIndexEmpty}
             </Text>
           </View>
@@ -165,14 +172,18 @@ export const ProgressScreen: React.FC = () => {
             style={[
               styles.dialCircle,
               {
-                borderColor: calibratedIndex ? colors.primaryLight : colors.borderLight,
+                borderColor: performanceIndex !== null ? colors.primaryLight : colors.borderLight,
                 backgroundColor: colors.backgroundSecondary,
               },
             ]}
           >
-            <BrainIcon size={38} color={calibratedIndex ? colors.primaryLight : colors.textMuted} />
+            <BrainIcon size={38} color={performanceIndex !== null ? colors.primaryLight : colors.textMuted} />
           </View>
         </View>
+
+        <Text style={[typography.caption, styles.disclaimerText, { color: colors.textMuted }]}>
+          {t.progress.indexDisclaimer}
+        </Text>
       </Card>
 
       {/* Stats Summary Grid */}
@@ -220,104 +231,126 @@ export const ProgressScreen: React.FC = () => {
         </Card>
       )}
 
-      {/* Cognitive Domains Breakdown */}
+      {/* Game Performance Breakdown Section */}
       <View style={styles.sectionHeader}>
         <Text style={[typography.h3, { color: colors.textPrimary }]}>
-          {t.progress.domainsTitle}
+          {t.progress.gameStatsTitle}
         </Text>
       </View>
 
-      <Card variant="elevated" style={styles.domainsCard}>
-        {/* Memory Domain */}
-        <View style={styles.domainRow}>
-          <View style={styles.domainLabelRow}>
-            <View style={styles.domainNameRow}>
-              <View style={[styles.domainDot, { backgroundColor: colors.memory }]} />
-              <Text style={[typography.label, { color: colors.textPrimary }]}>
-                Working & Spatial Memory
+      <View style={styles.gameCardsContainer}>
+        {/* Memory Matrix Breakdown */}
+        <Card variant="elevated" style={styles.gameStatsCard}>
+          <View style={styles.gameStatsHeader}>
+            <View style={styles.gameStatsTitleGroup}>
+              <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(124, 92, 252, 0.16)' }]}>
+                <GridIcon size={20} color={colors.primaryLight} />
+              </View>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 10 }]}>
+                {t.memoryMatrix.gameTitle}
               </Text>
             </View>
-            <Text style={[typography.bodySmall, { color: memorySessionsCount > 0 ? colors.success : colors.textMuted }]}>
-              {memorySessionsCount > 0
-                ? `${memorySessionsCount} ${t.progress.calibrated}`
-                : t.progress.uncalibrated}
-            </Text>
-          </View>
-          <View style={[styles.progressBarTrack, { backgroundColor: colors.backgroundHigher }]}>
-            <View
-              style={[
-                styles.progressBarFill,
-                {
-                  backgroundColor: colors.memory,
-                  width: `${Math.min(100, Math.max(memorySessionsCount * 12, memorySessionsCount > 0 ? 15 : 4))}%`,
-                  opacity: memorySessionsCount > 0 ? 1 : 0.35,
-                },
-              ]}
+            <StatBadge
+              label={`${summary?.gameStats['memory-matrix']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              variant="primary"
+              size="sm"
             />
           </View>
-        </View>
 
-        {/* Attention Domain (Uncalibrated) */}
-        <View style={[styles.domainRow, { marginTop: 14 }]}>
-          <View style={styles.domainLabelRow}>
-            <View style={styles.domainNameRow}>
-              <View style={[styles.domainDot, { backgroundColor: colors.attention }]} />
-              <Text style={[typography.label, { color: colors.textPrimary }]}>Selective Attention</Text>
+          <View style={[styles.gameMetricsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
+              <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
+                {summary?.gameStats['memory-matrix']?.highestScore.toLocaleString() ?? '0'}
+              </Text>
             </View>
-            <Text style={[typography.bodySmall, { color: colors.textMuted }]}>
-              {t.progress.uncalibrated}
-            </Text>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
+              <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
+                {summary?.gameStats['memory-matrix']?.avgAccuracy ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
+              <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
+                Lvl {summary?.gameStats['memory-matrix']?.highestLevel ?? 1}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricPerfect}</Text>
+              <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
+                {summary?.gameStats['memory-matrix']?.perfectRoundsTotal ?? 0}
+              </Text>
+            </View>
           </View>
-          <View style={[styles.progressBarTrack, { backgroundColor: colors.backgroundHigher }]}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { backgroundColor: colors.attention, width: '4%', opacity: 0.35 },
-              ]}
-            />
-          </View>
-        </View>
+        </Card>
 
-        {/* Processing Speed Domain (Uncalibrated) */}
-        <View style={[styles.domainRow, { marginTop: 14 }]}>
-          <View style={styles.domainLabelRow}>
-            <View style={styles.domainNameRow}>
-              <View style={[styles.domainDot, { backgroundColor: colors.speed }]} />
-              <Text style={[typography.label, { color: colors.textPrimary }]}>Processing Speed</Text>
+        {/* Number Recall Breakdown */}
+        <Card variant="elevated" style={styles.gameStatsCard}>
+          <View style={styles.gameStatsHeader}>
+            <View style={styles.gameStatsTitleGroup}>
+              <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(245, 158, 11, 0.16)' }]}>
+                <LayersIcon size={20} color={colors.memory} />
+              </View>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 10 }]}>
+                {t.numberRecall.gameTitle}
+              </Text>
             </View>
-            <Text style={[typography.bodySmall, { color: colors.textMuted }]}>
-              {t.progress.uncalibrated}
-            </Text>
-          </View>
-          <View style={[styles.progressBarTrack, { backgroundColor: colors.backgroundHigher }]}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { backgroundColor: colors.speed, width: '4%', opacity: 0.35 },
-              ]}
+            <StatBadge
+              label={`${summary?.gameStats['number-recall']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              variant="primary"
+              size="sm"
             />
           </View>
-        </View>
 
-        {/* Logical Reasoning Domain (Uncalibrated) */}
-        <View style={[styles.domainRow, { marginTop: 14 }]}>
-          <View style={styles.domainLabelRow}>
-            <View style={styles.domainNameRow}>
-              <View style={[styles.domainDot, { backgroundColor: colors.logic }]} />
-              <Text style={[typography.label, { color: colors.textPrimary }]}>Logical Reasoning</Text>
+          <View style={[styles.gameMetricsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
+              <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
+                {summary?.gameStats['number-recall']?.highestScore.toLocaleString() ?? '0'}
+              </Text>
             </View>
-            <Text style={[typography.bodySmall, { color: colors.textMuted }]}>
-              {t.progress.uncalibrated}
-            </Text>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
+              <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
+                {summary?.gameStats['number-recall']?.avgAccuracy ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
+              <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
+                Lvl {summary?.gameStats['number-recall']?.highestLevel ?? 1}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.maxSpanLabel}</Text>
+              <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
+                {summary?.gameStats['number-recall']?.maxDigitSpan ?? 0}d
+              </Text>
+            </View>
           </View>
-          <View style={[styles.progressBarTrack, { backgroundColor: colors.backgroundHigher }]}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { backgroundColor: colors.logic, width: '4%', opacity: 0.35 },
-              ]}
-            />
-          </View>
+        </Card>
+      </View>
+
+      {/* Roadmap Drills Header */}
+      <View style={styles.sectionHeader}>
+        <Text style={[typography.h3, { color: colors.textPrimary }]}>
+          {t.progress.roadmapDrillsTitle}
+        </Text>
+      </View>
+
+      <Card variant="outlined" style={styles.roadmapCard}>
+        <View style={styles.roadmapRow}>
+          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Focus Finder (Attention)</Text>
+          <StatBadge label="ROADMAP" variant="primary" size="sm" />
+        </View>
+        <View style={[styles.roadmapRow, { marginTop: 12 }]}>
+          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Quick Reaction (Speed)</Text>
+          <StatBadge label="ROADMAP" variant="primary" size="sm" />
+        </View>
+        <View style={[styles.roadmapRow, { marginTop: 12 }]}>
+          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Logic Quest (Reasoning)</Text>
+          <StatBadge label="ROADMAP" variant="primary" size="sm" />
         </View>
       </Card>
 
@@ -362,9 +395,28 @@ export const ProgressScreen: React.FC = () => {
         /* Populated Recent Sessions List */
         <View style={styles.historyList}>
           {sessions.map((session) => {
-            const isCompleted = session.outcome === 'completed';
+            const outcomeLabel =
+              session.outcome === 'completed'
+                ? t.progress.sessionOutcomeCompleted
+                : session.outcome === 'abandoned'
+                ? t.progress.sessionOutcomeAbandoned
+                : t.progress.sessionOutcomeConcluded;
+
+            const outcomeVariant =
+              session.outcome === 'completed'
+                ? 'success'
+                : session.outcome === 'abandoned'
+                ? 'warning'
+                : 'warning';
+
             return (
-              <Card key={session.id} variant="elevated" style={styles.sessionCard}>
+              <Card
+                key={session.id}
+                variant="elevated"
+                style={styles.sessionCard}
+                accessible={true}
+                accessibilityLabel={`${getGameDisplayName(session.gameId)}, ${outcomeLabel}, score ${session.finalScore}`}
+              >
                 <View style={styles.sessionCardHeader}>
                   <View style={styles.sessionGameInfo}>
                     <View style={[styles.sessionIconWrapper, { backgroundColor: colors.backgroundSecondary }]}>
@@ -381,8 +433,8 @@ export const ProgressScreen: React.FC = () => {
                   </View>
 
                   <StatBadge
-                    label={isCompleted ? t.progress.sessionOutcomeCompleted : t.progress.sessionOutcomeConcluded}
-                    variant={isCompleted ? 'success' : 'warning'}
+                    label={outcomeLabel}
+                    variant={outcomeVariant}
                     size="sm"
                   />
                 </View>
@@ -390,21 +442,21 @@ export const ProgressScreen: React.FC = () => {
                 {/* Metrics Row */}
                 <View style={[styles.sessionMetricsRow, { borderTopColor: colors.border }]}>
                   <View style={styles.sessionMetricItem}>
-                    <Text style={[typography.caption, { color: colors.textMuted }]}>Score</Text>
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricScore}</Text>
                     <Text style={[typography.label, { color: colors.primaryLight, marginTop: 2 }]}>
                       +{session.finalScore.toLocaleString()}
                     </Text>
                   </View>
 
                   <View style={styles.sessionMetricItem}>
-                    <Text style={[typography.caption, { color: colors.textMuted }]}>Accuracy</Text>
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
                     <Text style={[typography.label, { color: colors.attention, marginTop: 2 }]}>
                       {session.accuracyPercentage}%
                     </Text>
                   </View>
 
                   <View style={styles.sessionMetricItem}>
-                    <Text style={[typography.caption, { color: colors.textMuted }]}>Level</Text>
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
                     <Text style={[typography.label, { color: colors.textPrimary, marginTop: 2 }]}>
                       Lvl {session.highestLevel}
                     </Text>
@@ -412,7 +464,7 @@ export const ProgressScreen: React.FC = () => {
 
                   {session.gameSpecificMetrics?.maxDigitSpan !== undefined && (
                     <View style={styles.sessionMetricItem}>
-                      <Text style={[typography.caption, { color: colors.textMuted }]}>Span</Text>
+                      <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricSpan}</Text>
                       <Text style={[typography.label, { color: colors.success, marginTop: 2 }]}>
                         {session.gameSpecificMetrics.maxDigitSpan}d
                       </Text>
@@ -422,7 +474,7 @@ export const ProgressScreen: React.FC = () => {
                   {session.gameSpecificMetrics?.perfectRounds !== undefined &&
                     session.gameSpecificMetrics?.maxDigitSpan === undefined && (
                       <View style={styles.sessionMetricItem}>
-                        <Text style={[typography.caption, { color: colors.textMuted }]}>Perfect</Text>
+                        <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricPerfect}</Text>
                         <Text style={[typography.label, { color: colors.success, marginTop: 2 }]}>
                           {session.gameSpecificMetrics.perfectRounds}
                         </Text>
@@ -504,36 +556,52 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 6,
   },
-  domainsCard: {
-    padding: 16,
+  disclaimerText: {
+    marginTop: 10,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  gameCardsContainer: {
+    gap: 12,
     marginBottom: 20,
   },
-  domainRow: {
-    gap: 6,
+  gameStatsCard: {
+    padding: 16,
   },
-  domainLabelRow: {
+  gameStatsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  domainNameRow: {
+  gameStatsTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  domainDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+  gameIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  progressBarTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
+  gameMetricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    paddingTop: 10,
   },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
+  metricColumn: {
+    alignItems: 'center',
+  },
+  roadmapCard: {
+    padding: 16,
+    marginBottom: 20,
+  },
+  roadmapRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   loaderWrapper: {
     padding: 32,

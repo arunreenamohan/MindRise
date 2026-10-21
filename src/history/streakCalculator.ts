@@ -91,8 +91,10 @@ export function calculateStreak(
   const latestTrained = uniqueDates[uniqueDates.length - 1];
   const diffFromToday = getDaysDifference(latestTrained, todayKey);
 
-  // If latest training was before yesterday (diff > 1), the active streak has lapsed
-  if (diffFromToday > 1 || diffFromToday < 0) {
+  // If latest training was before yesterday (diff > 1), the active streak has lapsed.
+  // If diffFromToday <= 1 (including negative differences when timezone moves westward or
+  // user trains across midnight/clock adjustments), the streak remains active.
+  if (diffFromToday > 1) {
     return { currentStreak: 0, bestStreak };
   }
 
@@ -111,4 +113,36 @@ export function calculateStreak(
     currentStreak: activeStreak,
     bestStreak: Math.max(bestStreak, activeStreak),
   };
+}
+
+/**
+ * Computes the transparent in-app Drill Performance Index.
+ *
+ * Formula:
+ * - When totalWorkouts > 0: Math.round(totalScore / totalWorkouts)
+ * - When totalWorkouts === 0: null (uncalibrated)
+ *
+ * Input metrics:
+ * - totalScore: sum of final scores across qualifying sessions (completed or game-over)
+ * - totalWorkouts: count of qualifying sessions
+ *
+ * Boundaries:
+ * - Lower bound: 0
+ * - Uncalibrated: null
+ *
+ * IMPORTANT: This metric is an in-app training score average. It is NOT an IQ score,
+ * cognitive percentile, or clinically validated measure of general cognitive ability.
+ */
+export function calculateDrillPerformanceIndex(
+  totalScore: number,
+  totalWorkouts: number
+): number | null {
+  if (!Number.isFinite(totalWorkouts) || totalWorkouts <= 0) {
+    return null;
+  }
+  if (!Number.isFinite(totalScore) || totalScore <= 0) {
+    return 0;
+  }
+  const average = totalScore / totalWorkouts;
+  return Math.max(0, Math.round(average));
 }

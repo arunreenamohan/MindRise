@@ -100,6 +100,20 @@ export interface Translations {
     retryCta: string;
     sessionOutcomeCompleted: string;
     sessionOutcomeConcluded: string;
+    sessionOutcomeAbandoned: string;
+    metricScore: string;
+    metricAccuracy: string;
+    metricLevel: string;
+    metricSpan: string;
+    metricPerfect: string;
+    indexDisclaimer: string;
+    indexHeroBadge: string;
+    indexUncalibratedBadge: string;
+    gameStatsTitle: string;
+    highScoreLabel: string;
+    maxSpanLabel: string;
+    roadmapDrillsTitle: string;
+    sessionsCountLabel: string;
   };
   profile: {
     screenTitle: string;
