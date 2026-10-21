@@ -14,5 +14,6 @@ export type RootStackParamList = {
   GameIntro: { gameId: GameId };
   MemoryMatrixGame: undefined;
   NumberRecallGame: undefined;
+  QuickReactionGame: undefined;
 };
 

@@ -46,11 +46,13 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
     });
   });
 
-  it('verifies RootStackParamList supports MemoryMatrixGame and NumberRecallGame routes with undefined params', () => {
+  it('verifies RootStackParamList supports MemoryMatrixGame, NumberRecallGame, and QuickReactionGame routes with undefined params', () => {
     const mmRoute: keyof RootStackParamList = 'MemoryMatrixGame';
     const nrRoute: keyof RootStackParamList = 'NumberRecallGame';
+    const qrRoute: keyof RootStackParamList = 'QuickReactionGame';
     expect(mmRoute).toBe('MemoryMatrixGame');
     expect(nrRoute).toBe('NumberRecallGame');
+    expect(qrRoute).toBe('QuickReactionGame');
 
     const stackRoutes: (keyof RootStackParamList)[] = [
       'Onboarding',
@@ -58,10 +60,12 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
       'GameIntro',
       'MemoryMatrixGame',
       'NumberRecallGame',
+      'QuickReactionGame',
     ];
     expect(stackRoutes).toContain('MemoryMatrixGame');
     expect(stackRoutes).toContain('NumberRecallGame');
+    expect(stackRoutes).toContain('QuickReactionGame');
     expect(stackRoutes).toContain('GameIntro');
-    expect(stackRoutes).toHaveLength(5);
+    expect(stackRoutes).toHaveLength(6);
   });
 });

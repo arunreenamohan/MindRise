@@ -18,6 +18,7 @@ import {
   SparklesIcon,
   GridIcon,
   LayersIcon,
+  ZapIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
@@ -76,6 +77,8 @@ export const ProgressScreen: React.FC = () => {
         return <GridIcon size={20} color={colors.primaryLight} />;
       case 'number-recall':
         return <LayersIcon size={20} color={colors.memory} />;
+      case 'quick-reaction':
+        return <ZapIcon size={20} color={colors.speed} />;
       default:
         return <BrainIcon size={20} color={colors.primaryLight} />;
     }
@@ -87,6 +90,8 @@ export const ProgressScreen: React.FC = () => {
         return t.memoryMatrix.gameTitle;
       case 'number-recall':
         return t.numberRecall.gameTitle;
+      case 'quick-reaction':
+        return t.quickReaction.gameTitle;
       default:
         return gameId;
     }
@@ -330,6 +335,56 @@ export const ProgressScreen: React.FC = () => {
             </View>
           </View>
         </Card>
+
+        {/* Quick Reaction Breakdown */}
+        <Card variant="elevated" style={styles.gameStatsCard}>
+          <View style={styles.gameStatsHeader}>
+            <View style={styles.gameStatsTitleGroup}>
+              <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(255, 83, 118, 0.16)' }]}>
+                <ZapIcon size={20} color={colors.speed} />
+              </View>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 10 }]}>
+                {t.quickReaction.gameTitle}
+              </Text>
+            </View>
+            <StatBadge
+              label={`${summary?.gameStats['quick-reaction']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              variant="primary"
+              size="sm"
+            />
+          </View>
+
+          <View style={[styles.gameMetricsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
+              <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
+                {summary?.gameStats['quick-reaction']?.highestScore.toLocaleString() ?? '0'}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
+              <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
+                {summary?.gameStats['quick-reaction']?.avgAccuracy ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.bestReactionLabel}</Text>
+              <Text style={[typography.label, { color: colors.speed, marginTop: 4 }]}>
+                {summary?.gameStats['quick-reaction']?.bestReactionMs !== undefined
+                  ? `${summary.gameStats['quick-reaction'].bestReactionMs}ms`
+                  : '--'}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgReactionLabel}</Text>
+              <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
+                {summary?.gameStats['quick-reaction']?.avgReactionMs !== undefined
+                  ? `${summary.gameStats['quick-reaction'].avgReactionMs}ms`
+                  : '--'}
+              </Text>
+            </View>
+          </View>
+        </Card>
       </View>
 
       {/* Roadmap Drills Header */}
@@ -342,10 +397,6 @@ export const ProgressScreen: React.FC = () => {
       <Card variant="outlined" style={styles.roadmapCard}>
         <View style={styles.roadmapRow}>
           <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Focus Finder (Attention)</Text>
-          <StatBadge label="ROADMAP" variant="primary" size="sm" />
-        </View>
-        <View style={[styles.roadmapRow, { marginTop: 12 }]}>
-          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Quick Reaction (Speed)</Text>
           <StatBadge label="ROADMAP" variant="primary" size="sm" />
         </View>
         <View style={[styles.roadmapRow, { marginTop: 12 }]}>
@@ -471,8 +522,18 @@ export const ProgressScreen: React.FC = () => {
                     </View>
                   )}
 
+                  {session.gameSpecificMetrics?.bestReactionMs !== undefined && (
+                    <View style={styles.sessionMetricItem}>
+                      <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.bestReactionLabel}</Text>
+                      <Text style={[typography.label, { color: colors.speed, marginTop: 2 }]}>
+                        {session.gameSpecificMetrics.bestReactionMs}ms
+                      </Text>
+                    </View>
+                  )}
+
                   {session.gameSpecificMetrics?.perfectRounds !== undefined &&
-                    session.gameSpecificMetrics?.maxDigitSpan === undefined && (
+                    session.gameSpecificMetrics?.maxDigitSpan === undefined &&
+                    session.gameSpecificMetrics?.bestReactionMs === undefined && (
                       <View style={styles.sessionMetricItem}>
                         <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricPerfect}</Text>
                         <Text style={[typography.label, { color: colors.success, marginTop: 2 }]}>

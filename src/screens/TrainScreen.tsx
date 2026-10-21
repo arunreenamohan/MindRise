@@ -119,7 +119,10 @@ export const TrainScreen: React.FC = () => {
       <View style={styles.gamesList}>
         {filteredGames.map((game) => {
           const accentColor = colors[game.accentColorKey] || colors.primary;
-          const isPlayable = game.status === 'ready-phase2' || game.status === 'ready-phase3';
+          const isPlayable =
+            game.status === 'ready-phase2' ||
+            game.status === 'ready-phase3' ||
+            game.status === 'ready-phase5';
 
           return (
             <Card

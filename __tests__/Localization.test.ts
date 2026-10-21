@@ -45,4 +45,28 @@ describe('MindRise Localization (EN & ML)', () => {
     expect(en.home.streakActiveDesc).toBeTruthy();
     expect(ml.home.streakActiveDesc).toBeTruthy();
   });
+
+  it('provides complete Quick Reaction translations in English and Malayalam', () => {
+    expect(en.quickReaction.gameTitle).toBe('Quick Reaction');
+    expect(ml.quickReaction.gameTitle).toBe('ക്വിക്ക് റിയാക്ഷൻ');
+
+    expect(en.quickReaction.waitPhase).toBe('Wait for Green...');
+    expect(ml.quickReaction.waitPhase).toBeTruthy();
+
+    expect(en.quickReaction.triggerPhase).toBe('TAP NOW!');
+    expect(ml.quickReaction.triggerPhase).toBeTruthy();
+
+    expect(en.quickReaction.falseStartFeedback).toBe('Too Early!');
+    expect(ml.quickReaction.falseStartFeedback).toBeTruthy();
+
+    expect(en.quickReaction.timeoutFeedback).toBe('Time Expired!');
+    expect(ml.quickReaction.timeoutFeedback).toBeTruthy();
+
+    expect(en.quickReaction.bestReactionLabel).toBe('Best Reaction');
+    expect(ml.quickReaction.bestReactionLabel).toBeTruthy();
+
+    const enQrKeys = Object.keys(en.quickReaction).sort();
+    const mlQrKeys = Object.keys(ml.quickReaction).sort();
+    expect(enQrKeys).toEqual(mlQrKeys);
+  });
 });
