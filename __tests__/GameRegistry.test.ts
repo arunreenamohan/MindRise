@@ -60,6 +60,7 @@ describe('MindRise Game Domain & Registry', () => {
   it('enforces verified game status across catalogue entries', () => {
     const readyPhase2Games = GAMES_LIST.filter((g) => g.status === 'ready-phase2');
     const readyPhase3Games = GAMES_LIST.filter((g) => g.status === 'ready-phase3');
+    const readyPhase5Games = GAMES_LIST.filter((g) => g.status === 'ready-phase5');
     const inDevelopmentGames = GAMES_LIST.filter((g) => g.status === 'in-development');
 
     // Exactly 1 flagship game prepared for Phase 2 implementation
@@ -70,12 +71,16 @@ describe('MindRise Game Domain & Registry', () => {
     expect(readyPhase3Games).toHaveLength(1);
     expect(readyPhase3Games[0].id).toBe('number-recall');
 
-    // Exactly 4 games in development for subsequent milestones
-    expect(inDevelopmentGames).toHaveLength(4);
+    // Exactly 1 game prepared for Phase 5 implementation
+    expect(readyPhase5Games).toHaveLength(1);
+    expect(readyPhase5Games[0].id).toBe('quick-reaction');
+
+    // Exactly 3 games in development for subsequent milestones
+    expect(inDevelopmentGames).toHaveLength(3);
 
     // No game should claim full production release before implementation
     GAMES_LIST.forEach((g) => {
-      expect(['ready-phase2', 'ready-phase3', 'in-development']).toContain(g.status);
+      expect(['ready-phase2', 'ready-phase3', 'ready-phase5', 'in-development']).toContain(g.status);
     });
   });
 

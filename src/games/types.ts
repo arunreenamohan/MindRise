@@ -8,7 +8,7 @@ export type GameId =
 
 export type CognitiveCategory = 'memory' | 'attention' | 'speed' | 'logic' | 'problemSolving';
 
-export type GameStatus = 'ready-phase2' | 'ready-phase3' | 'in-development';
+export type GameStatus = 'ready-phase2' | 'ready-phase3' | 'ready-phase5' | 'in-development';
 
 export interface GameParameterSpecs {
   estimatedDurationMins: number;
