@@ -123,7 +123,8 @@ export const TrainScreen: React.FC = () => {
             game.status === 'ready-phase2' ||
             game.status === 'ready-phase3' ||
             game.status === 'ready-phase5' ||
-            game.status === 'ready-phase6';
+            game.status === 'ready-phase6' ||
+            game.status === 'ready-phase7';
 
           return (
             <Card

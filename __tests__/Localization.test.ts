@@ -99,4 +99,28 @@ describe('MindRise Localization (EN & ML)', () => {
     const mlLqKeys = Object.keys(ml.logicQuest).sort();
     expect(enLqKeys).toEqual(mlLqKeys);
   });
+
+  it('provides complete Focus Finder translations in English and Malayalam', () => {
+    expect(en.focusFinder.gameTitle).toBe('Focus Finder');
+    expect(ml.focusFinder.gameTitle).toBe('ഫോക്കസ് ഫൈൻഡർ');
+
+    expect(en.focusFinder.findPrompt).toBe('Find the target:');
+    expect(ml.focusFinder.findPrompt).toBeTruthy();
+
+    expect(en.focusFinder.hitFeedback).toBe('Target Identified!');
+    expect(ml.focusFinder.hitFeedback).toBeTruthy();
+
+    expect(en.focusFinder.missFeedback).toBe('Incorrect Target!');
+    expect(ml.focusFinder.missFeedback).toBeTruthy();
+
+    expect(en.focusFinder.sessionCompleteTitle).toBe('Session Complete!');
+    expect(ml.focusFinder.sessionCompleteTitle).toBeTruthy();
+
+    expect(en.focusFinder.shapeDiamond).toBe('Diamond');
+    expect(ml.focusFinder.shapeDiamond).toBe('ഡയമണ്ട്');
+
+    const enFfKeys = Object.keys(en.focusFinder).sort();
+    const mlFfKeys = Object.keys(ml.focusFinder).sort();
+    expect(enFfKeys).toEqual(mlFfKeys);
+  });
 });

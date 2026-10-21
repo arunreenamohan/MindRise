@@ -39,7 +39,8 @@ export const GameIntroScreen: React.FC = () => {
     game.id === 'memory-matrix' ||
     game.id === 'number-recall' ||
     game.id === 'quick-reaction' ||
-    game.id === 'logic-quest';
+    game.id === 'logic-quest' ||
+    game.id === 'focus-finder';
   const accentColor = colors[game.accentColorKey] || colors.primary;
 
   const getGameIcon = (id: string, color: string) => {
@@ -69,6 +70,8 @@ export const GameIntroScreen: React.FC = () => {
       (navigation as any).navigate('QuickReactionGame');
     } else if (game.id === 'logic-quest') {
       (navigation as any).navigate('LogicQuestGame');
+    } else if (game.id === 'focus-finder') {
+      (navigation as any).navigate('FocusFinderGame');
     } else {
       setModalVisible(true);
     }

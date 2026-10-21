@@ -611,6 +611,68 @@ describe('HistoryRepository', () => {
     expect(lqStats.avgResponseTimeMs).toBe(4000); // (4500 + 3500) / 2
   });
 
+  it('correctly persists and aggregates Focus Finder sessions and metrics', async () => {
+    const ffRecord1: GameSessionRecord = {
+      id: 'session_ff_001',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'focus-finder',
+      startedAt: '2026-10-21T12:00:00.000Z',
+      completedAt: '2026-10-21T12:01:30.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 4200,
+      accuracyPercentage: 90,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 5,
+      durationMs: 90000,
+      gameSpecificMetrics: {
+        targetHits: 9,
+        misses: 1,
+        bestFindTimeMs: 650,
+        avgFindTimeMs: 1200,
+      },
+    };
+
+    const ffRecord2: GameSessionRecord = {
+      id: 'session_ff_002',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'focus-finder',
+      startedAt: '2026-10-21T13:00:00.000Z',
+      completedAt: '2026-10-21T13:01:25.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 4800,
+      accuracyPercentage: 100,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 6,
+      durationMs: 85000,
+      gameSpecificMetrics: {
+        targetHits: 10,
+        misses: 0,
+        bestFindTimeMs: 520,
+        avgFindTimeMs: 980,
+      },
+    };
+
+    await historyRepository.saveSession(ffRecord1);
+    await historyRepository.saveSession(ffRecord2);
+
+    const sessions = await historyRepository.getSessions();
+    expect(sessions).toHaveLength(2);
+
+    const summary = await historyRepository.getHistorySummary();
+    const ffStats = summary.gameStats['focus-finder'];
+    expect(ffStats).toBeDefined();
+    expect(ffStats.sessionsCount).toBe(2);
+    expect(ffStats.highestScore).toBe(4800);
+    expect(ffStats.highestLevel).toBe(6);
+    expect(ffStats.avgAccuracy).toBe(95); // (90 + 100) / 2
+    expect(ffStats.bestFindTimeMs).toBe(520); // Math.min(650, 520)
+    expect(ffStats.avgFindTimeMs).toBe(1090); // Math.round((1200 + 980) / 2)
+  });
+
   it('clears history completely', async () => {
     await historyRepository.saveSession(sampleMMRecord);
     expect(await historyRepository.getSessions()).toHaveLength(1);

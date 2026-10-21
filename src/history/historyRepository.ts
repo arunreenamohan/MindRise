@@ -344,6 +344,22 @@ class HistoryRepository {
             ? Math.round(avgLogicResponses.reduce((sum, v) => sum + v, 0) / avgLogicResponses.length)
             : undefined;
 
+        const validFindTimes = records
+          .map((r) => Number(r.gameSpecificMetrics?.bestFindTimeMs))
+          .filter((v) => Number.isFinite(v) && v > 0);
+
+        const bestFindTimeMs =
+          validFindTimes.length > 0 ? Math.min(...validFindTimes) : undefined;
+
+        const avgFindTimes = records
+          .map((r) => Number(r.gameSpecificMetrics?.avgFindTimeMs))
+          .filter((v) => Number.isFinite(v) && v > 0);
+
+        const overallAvgFindMs =
+          avgFindTimes.length > 0
+            ? Math.round(avgFindTimes.reduce((sum, v) => sum + v, 0) / avgFindTimes.length)
+            : undefined;
+
         gameStats[gameId] = {
           sessionsCount: count,
           highestScore,
@@ -354,6 +370,8 @@ class HistoryRepository {
           bestReactionMs: gameId === 'quick-reaction' ? bestReactionMs : undefined,
           avgReactionMs: gameId === 'quick-reaction' ? overallAvgReactionMs : undefined,
           avgResponseTimeMs: gameId === 'logic-quest' ? overallAvgLogicMs : undefined,
+          bestFindTimeMs: gameId === 'focus-finder' ? bestFindTimeMs : undefined,
+          avgFindTimeMs: gameId === 'focus-finder' ? overallAvgFindMs : undefined,
         };
       }
     });

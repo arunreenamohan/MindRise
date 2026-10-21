@@ -16,5 +16,6 @@ export type RootStackParamList = {
   NumberRecallGame: undefined;
   QuickReactionGame: undefined;
   LogicQuestGame: undefined;
+  FocusFinderGame: undefined;
 };
 

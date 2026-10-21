@@ -46,15 +46,17 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
     });
   });
 
-  it('verifies RootStackParamList supports MemoryMatrixGame, NumberRecallGame, QuickReactionGame, and LogicQuestGame routes with undefined params', () => {
+  it('verifies RootStackParamList supports MemoryMatrixGame, NumberRecallGame, QuickReactionGame, LogicQuestGame, and FocusFinderGame routes with undefined params', () => {
     const mmRoute: keyof RootStackParamList = 'MemoryMatrixGame';
     const nrRoute: keyof RootStackParamList = 'NumberRecallGame';
     const qrRoute: keyof RootStackParamList = 'QuickReactionGame';
     const lqRoute: keyof RootStackParamList = 'LogicQuestGame';
+    const ffRoute: keyof RootStackParamList = 'FocusFinderGame';
     expect(mmRoute).toBe('MemoryMatrixGame');
     expect(nrRoute).toBe('NumberRecallGame');
     expect(qrRoute).toBe('QuickReactionGame');
     expect(lqRoute).toBe('LogicQuestGame');
+    expect(ffRoute).toBe('FocusFinderGame');
 
     const stackRoutes: (keyof RootStackParamList)[] = [
       'Onboarding',
@@ -64,12 +66,14 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
       'NumberRecallGame',
       'QuickReactionGame',
       'LogicQuestGame',
+      'FocusFinderGame',
     ];
     expect(stackRoutes).toContain('MemoryMatrixGame');
     expect(stackRoutes).toContain('NumberRecallGame');
     expect(stackRoutes).toContain('QuickReactionGame');
     expect(stackRoutes).toContain('LogicQuestGame');
+    expect(stackRoutes).toContain('FocusFinderGame');
     expect(stackRoutes).toContain('GameIntro');
-    expect(stackRoutes).toHaveLength(7);
+    expect(stackRoutes).toHaveLength(8);
   });
 });

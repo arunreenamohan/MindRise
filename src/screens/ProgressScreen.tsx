@@ -81,6 +81,8 @@ export const ProgressScreen: React.FC = () => {
         return <ZapIcon size={20} color={colors.speed} />;
       case 'logic-quest':
         return <BrainIcon size={20} color={colors.primaryLight} />;
+      case 'focus-finder':
+        return <TargetIcon size={20} color={colors.attention} />;
       default:
         return <BrainIcon size={20} color={colors.primaryLight} />;
     }
@@ -96,6 +98,8 @@ export const ProgressScreen: React.FC = () => {
         return t.quickReaction.gameTitle;
       case 'logic-quest':
         return t.logicQuest.gameTitle;
+      case 'focus-finder':
+        return t.focusFinder.gameTitle;
       default:
         return gameId;
     }
@@ -437,6 +441,54 @@ export const ProgressScreen: React.FC = () => {
             </View>
           </View>
         </Card>
+
+        {/* Focus Finder Breakdown */}
+        <Card variant="elevated" style={styles.gameStatsCard}>
+          <View style={styles.gameStatsHeader}>
+            <View style={styles.gameStatsTitleGroup}>
+              <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(0, 212, 178, 0.16)' }]}>
+                <TargetIcon size={20} color={colors.attention} />
+              </View>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 10 }]}>
+                {t.focusFinder.gameTitle}
+              </Text>
+            </View>
+            <StatBadge
+              label={`${summary?.gameStats['focus-finder']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              variant="primary"
+              size="sm"
+            />
+          </View>
+
+          <View style={[styles.gameMetricsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
+              <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
+                {summary?.gameStats['focus-finder']?.highestScore.toLocaleString() ?? '0'}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
+              <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
+                {summary?.gameStats['focus-finder']?.avgAccuracy ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
+              <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
+                Lvl {summary?.gameStats['focus-finder']?.highestLevel ?? 1}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.focusFinder.bestFindTimeLabel}</Text>
+              <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
+                {summary?.gameStats['focus-finder']?.bestFindTimeMs !== undefined
+                  ? `${summary.gameStats['focus-finder'].bestFindTimeMs}ms`
+                  : '--'}
+              </Text>
+            </View>
+          </View>
+        </Card>
       </View>
 
       {/* Roadmap Drills Header */}
@@ -448,10 +500,6 @@ export const ProgressScreen: React.FC = () => {
 
       <Card variant="outlined" style={styles.roadmapCard}>
         <View style={styles.roadmapRow}>
-          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Focus Finder (Attention)</Text>
-          <StatBadge label="ROADMAP" variant="primary" size="sm" />
-        </View>
-        <View style={[styles.roadmapRow, { marginTop: 12 }]}>
           <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Pattern Master (Visual Logic)</Text>
           <StatBadge label="ROADMAP" variant="primary" size="sm" />
         </View>

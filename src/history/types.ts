@@ -16,6 +16,10 @@ export interface GameSpecificMetrics {
   correctAnswers?: number;
   questionsAnswered?: number;
   avgResponseTimeMs?: number;
+  targetHits?: number;
+  misses?: number;
+  bestFindTimeMs?: number;
+  avgFindTimeMs?: number;
   [key: string]: unknown;
 }
 
@@ -46,6 +50,8 @@ export interface GamePerformanceSummary {
   bestReactionMs?: number;
   avgReactionMs?: number;
   avgResponseTimeMs?: number;
+  bestFindTimeMs?: number;
+  avgFindTimeMs?: number;
 }
 
 export interface HistorySummary {
