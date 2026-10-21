@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from './types';
 import { HomeScreen } from '../screens/HomeScreen';
 import { TrainScreen } from '../screens/TrainScreen';
@@ -30,6 +31,10 @@ const renderProfileTabIcon = ({ color, size }: { color: string; size: number }) 
 export const AppTabNavigator: React.FC = () => {
   const { colors } = useTheme();
   const { t } = useLocalization();
+  const insets = useSafeAreaInsets();
+
+  const bottomInset = Math.max(insets.bottom, 12);
+  const tabHeight = 54 + bottomInset;
 
   return (
     <Tab.Navigator
@@ -40,9 +45,9 @@ export const AppTabNavigator: React.FC = () => {
           backgroundColor: colors.tabBarBackground,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: tabHeight,
+          paddingBottom: bottomInset,
+          paddingTop: 6,
         },
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
