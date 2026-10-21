@@ -486,6 +486,72 @@ describe('HistoryRepository', () => {
     expect(summary.totalScore).toBe(450);
   });
 
+  it('correctly persists and calculates gameStats for Quick Reaction sessions', async () => {
+    const qrRecord1: GameSessionRecord = {
+      id: 'session_qr_001',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'quick-reaction',
+      startedAt: '2026-10-21T10:00:00.000Z',
+      completedAt: '2026-10-21T10:02:00.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 2800,
+      accuracyPercentage: 90,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 4,
+      durationMs: 120000,
+      gameSpecificMetrics: {
+        bestReactionMs: 210,
+        avgReactionMs: 250,
+        medianReactionMs: 245,
+        validHits: 9,
+        falseStarts: 1,
+        timeouts: 0,
+      },
+    };
+
+    const qrRecord2: GameSessionRecord = {
+      id: 'session_qr_002',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'quick-reaction',
+      startedAt: '2026-10-21T11:00:00.000Z',
+      completedAt: '2026-10-21T11:02:00.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 3200,
+      accuracyPercentage: 100,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 5,
+      durationMs: 110000,
+      gameSpecificMetrics: {
+        bestReactionMs: 185,
+        avgReactionMs: 230,
+        medianReactionMs: 220,
+        validHits: 10,
+        falseStarts: 0,
+        timeouts: 0,
+      },
+    };
+
+    await historyRepository.saveSession(qrRecord1);
+    await historyRepository.saveSession(qrRecord2);
+
+    const sessions = await historyRepository.getSessions();
+    expect(sessions).toHaveLength(2);
+
+    const summary = await historyRepository.getHistorySummary();
+    const qrStats = summary.gameStats['quick-reaction'];
+    expect(qrStats).toBeDefined();
+    expect(qrStats.sessionsCount).toBe(2);
+    expect(qrStats.highestScore).toBe(3200);
+    expect(qrStats.highestLevel).toBe(5);
+    expect(qrStats.avgAccuracy).toBe(95); // (90 + 100) / 2
+    expect(qrStats.bestReactionMs).toBe(185); // Minimum of 210 and 185
+    expect(qrStats.avgReactionMs).toBe(240); // (250 + 230) / 2
+  });
+
   it('clears history completely', async () => {
     await historyRepository.saveSession(sampleMMRecord);
     expect(await historyRepository.getSessions()).toHaveLength(1);

@@ -7,6 +7,12 @@ export type SessionOutcome = 'completed' | 'game-over' | 'abandoned';
 export interface GameSpecificMetrics {
   perfectRounds?: number;
   maxDigitSpan?: number;
+  bestReactionMs?: number;
+  avgReactionMs?: number;
+  medianReactionMs?: number;
+  validHits?: number;
+  falseStarts?: number;
+  timeouts?: number;
   [key: string]: unknown;
 }
 
@@ -34,6 +40,8 @@ export interface GamePerformanceSummary {
   highestLevel: number;
   maxDigitSpan?: number;
   perfectRoundsTotal: number;
+  bestReactionMs?: number;
+  avgReactionMs?: number;
 }
 
 export interface HistorySummary {

@@ -319,6 +319,22 @@ class HistoryRepository {
           0
         );
 
+        const validReactionTimes = records
+          .map((r) => Number(r.gameSpecificMetrics?.bestReactionMs))
+          .filter((v) => Number.isFinite(v) && v > 0);
+
+        const bestReactionMs =
+          validReactionTimes.length > 0 ? Math.min(...validReactionTimes) : undefined;
+
+        const avgReactionTimes = records
+          .map((r) => Number(r.gameSpecificMetrics?.avgReactionMs))
+          .filter((v) => Number.isFinite(v) && v > 0);
+
+        const overallAvgReactionMs =
+          avgReactionTimes.length > 0
+            ? Math.round(avgReactionTimes.reduce((sum, v) => sum + v, 0) / avgReactionTimes.length)
+            : undefined;
+
         gameStats[gameId] = {
           sessionsCount: count,
           highestScore,
@@ -326,6 +342,8 @@ class HistoryRepository {
           highestLevel,
           perfectRoundsTotal,
           maxDigitSpan: gameId === 'number-recall' ? maxDigitSpan : undefined,
+          bestReactionMs: gameId === 'quick-reaction' ? bestReactionMs : undefined,
+          avgReactionMs: gameId === 'quick-reaction' ? overallAvgReactionMs : undefined,
         };
       }
     });
