@@ -79,6 +79,8 @@ export const ProgressScreen: React.FC = () => {
         return <LayersIcon size={20} color={colors.memory} />;
       case 'quick-reaction':
         return <ZapIcon size={20} color={colors.speed} />;
+      case 'logic-quest':
+        return <BrainIcon size={20} color={colors.primaryLight} />;
       default:
         return <BrainIcon size={20} color={colors.primaryLight} />;
     }
@@ -92,6 +94,8 @@ export const ProgressScreen: React.FC = () => {
         return t.numberRecall.gameTitle;
       case 'quick-reaction':
         return t.quickReaction.gameTitle;
+      case 'logic-quest':
+        return t.logicQuest.gameTitle;
       default:
         return gameId;
     }
@@ -385,6 +389,54 @@ export const ProgressScreen: React.FC = () => {
             </View>
           </View>
         </Card>
+
+        {/* Logic Quest Breakdown */}
+        <Card variant="elevated" style={styles.gameStatsCard}>
+          <View style={styles.gameStatsHeader}>
+            <View style={styles.gameStatsTitleGroup}>
+              <View style={[styles.gameIconBadge, { backgroundColor: 'rgba(56, 189, 248, 0.16)' }]}>
+                <BrainIcon size={20} color={colors.primaryLight} />
+              </View>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 10 }]}>
+                {t.logicQuest.gameTitle}
+              </Text>
+            </View>
+            <StatBadge
+              label={`${summary?.gameStats['logic-quest']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              variant="primary"
+              size="sm"
+            />
+          </View>
+
+          <View style={[styles.gameMetricsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
+              <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
+                {summary?.gameStats['logic-quest']?.highestScore.toLocaleString() ?? '0'}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
+              <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
+                {summary?.gameStats['logic-quest']?.avgAccuracy ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
+              <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
+                Lvl {summary?.gameStats['logic-quest']?.highestLevel ?? 1}
+              </Text>
+            </View>
+            <View style={styles.metricColumn}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgTimeLabel}</Text>
+              <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
+                {summary?.gameStats['logic-quest']?.avgResponseTimeMs !== undefined
+                  ? `${(summary.gameStats['logic-quest'].avgResponseTimeMs / 1000).toFixed(1)}s`
+                  : '--'}
+              </Text>
+            </View>
+          </View>
+        </Card>
       </View>
 
       {/* Roadmap Drills Header */}
@@ -400,7 +452,7 @@ export const ProgressScreen: React.FC = () => {
           <StatBadge label="ROADMAP" variant="primary" size="sm" />
         </View>
         <View style={[styles.roadmapRow, { marginTop: 12 }]}>
-          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Logic Quest (Reasoning)</Text>
+          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>Pattern Master (Visual Logic)</Text>
           <StatBadge label="ROADMAP" variant="primary" size="sm" />
         </View>
       </Card>
@@ -531,9 +583,19 @@ export const ProgressScreen: React.FC = () => {
                     </View>
                   )}
 
+                  {session.gameSpecificMetrics?.avgResponseTimeMs !== undefined && (
+                    <View style={styles.sessionMetricItem}>
+                      <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgTimeLabel}</Text>
+                      <Text style={[typography.label, { color: colors.success, marginTop: 2 }]}>
+                        {(session.gameSpecificMetrics.avgResponseTimeMs / 1000).toFixed(1)}s
+                      </Text>
+                    </View>
+                  )}
+
                   {session.gameSpecificMetrics?.perfectRounds !== undefined &&
                     session.gameSpecificMetrics?.maxDigitSpan === undefined &&
-                    session.gameSpecificMetrics?.bestReactionMs === undefined && (
+                    session.gameSpecificMetrics?.bestReactionMs === undefined &&
+                    session.gameSpecificMetrics?.avgResponseTimeMs === undefined && (
                       <View style={styles.sessionMetricItem}>
                         <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricPerfect}</Text>
                         <Text style={[typography.label, { color: colors.success, marginTop: 2 }]}>

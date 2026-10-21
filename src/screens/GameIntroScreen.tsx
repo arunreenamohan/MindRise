@@ -35,7 +35,11 @@ export const GameIntroScreen: React.FC = () => {
 
   const gameId = route.params?.gameId;
   const game = (gameId ? getGameById(gameId) : undefined) || getGameById('memory-matrix')!;
-  const isPlayable = game.id === 'memory-matrix' || game.id === 'number-recall' || game.id === 'quick-reaction';
+  const isPlayable =
+    game.id === 'memory-matrix' ||
+    game.id === 'number-recall' ||
+    game.id === 'quick-reaction' ||
+    game.id === 'logic-quest';
   const accentColor = colors[game.accentColorKey] || colors.primary;
 
   const getGameIcon = (id: string, color: string) => {
@@ -63,6 +67,8 @@ export const GameIntroScreen: React.FC = () => {
       (navigation as any).navigate('NumberRecallGame');
     } else if (game.id === 'quick-reaction') {
       (navigation as any).navigate('QuickReactionGame');
+    } else if (game.id === 'logic-quest') {
+      (navigation as any).navigate('LogicQuestGame');
     } else {
       setModalVisible(true);
     }

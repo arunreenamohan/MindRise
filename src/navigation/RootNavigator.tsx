@@ -7,6 +7,7 @@ import { GameIntroScreen } from '../screens/GameIntroScreen';
 import { MemoryMatrixGameScreen } from '../screens/MemoryMatrixGameScreen';
 import { NumberRecallGameScreen } from '../screens/NumberRecallGameScreen';
 import { QuickReactionGameScreen } from '../screens/QuickReactionGameScreen';
+import { LogicQuestGameScreen } from '../screens/LogicQuestGameScreen';
 import { useTheme } from '../theme/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -51,6 +52,14 @@ export const RootNavigator: React.FC = () => {
       <Stack.Screen
         name="QuickReactionGame"
         component={QuickReactionGameScreen}
+        options={{
+          presentation: 'card',
+          animation: 'fade_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="LogicQuestGame"
+        component={LogicQuestGameScreen}
         options={{
           presentation: 'card',
           animation: 'fade_from_bottom',

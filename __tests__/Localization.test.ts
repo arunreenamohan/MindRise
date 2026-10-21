@@ -69,4 +69,34 @@ describe('MindRise Localization (EN & ML)', () => {
     const mlQrKeys = Object.keys(ml.quickReaction).sort();
     expect(enQrKeys).toEqual(mlQrKeys);
   });
+
+  it('provides complete Logic Quest translations in English and Malayalam', () => {
+    expect(en.logicQuest.gameTitle).toBe('Logic Quest');
+    expect(ml.logicQuest.gameTitle).toBe('ലോജിക് ക്വസ്റ്റ്');
+
+    expect(en.logicQuest.categoryNumberSequence).toBe('Number Sequence');
+    expect(ml.logicQuest.categoryNumberSequence).toBeTruthy();
+
+    expect(en.logicQuest.categoryOddOneOut).toBe('Odd-One-Out');
+    expect(ml.logicQuest.categoryOddOneOut).toBeTruthy();
+
+    expect(en.logicQuest.categoryDeductive).toBe('Deductive Logic');
+    expect(ml.logicQuest.categoryDeductive).toBeTruthy();
+
+    expect(en.logicQuest.submitCta).toBe('Submit Answer');
+    expect(ml.logicQuest.submitCta).toBeTruthy();
+
+    expect(en.logicQuest.correctFeedback).toBe('Logical deduction correct!');
+    expect(ml.logicQuest.correctFeedback).toBeTruthy();
+
+    expect(en.logicQuest.incorrectFeedback).toBe('Not quite logical.');
+    expect(ml.logicQuest.incorrectFeedback).toBeTruthy();
+
+    expect(en.logicQuest.sessionCompleteTitle).toBe('Quest Concluded!');
+    expect(ml.logicQuest.sessionCompleteTitle).toBeTruthy();
+
+    const enLqKeys = Object.keys(en.logicQuest).sort();
+    const mlLqKeys = Object.keys(ml.logicQuest).sort();
+    expect(enLqKeys).toEqual(mlLqKeys);
+  });
 });

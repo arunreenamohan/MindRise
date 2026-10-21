@@ -552,6 +552,65 @@ describe('HistoryRepository', () => {
     expect(qrStats.avgReactionMs).toBe(240); // (250 + 230) / 2
   });
 
+  it('correctly persists and calculates gameStats for Logic Quest sessions', async () => {
+    const lqRecord1: GameSessionRecord = {
+      id: 'session_lq_001',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'logic-quest',
+      startedAt: '2026-10-21T10:00:00.000Z',
+      completedAt: '2026-10-21T10:02:00.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 3200,
+      accuracyPercentage: 90,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 6,
+      durationMs: 120000,
+      gameSpecificMetrics: {
+        correctAnswers: 9,
+        questionsAnswered: 10,
+        avgResponseTimeMs: 4500,
+      },
+    };
+
+    const lqRecord2: GameSessionRecord = {
+      id: 'session_lq_002',
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      gameId: 'logic-quest',
+      startedAt: '2026-10-21T11:00:00.000Z',
+      completedAt: '2026-10-21T11:02:00.000Z',
+      dateKey: '2026-10-21',
+      outcome: 'completed',
+      finalScore: 3800,
+      accuracyPercentage: 100,
+      roundsCompleted: 10,
+      totalRounds: 10,
+      highestLevel: 6,
+      durationMs: 95000,
+      gameSpecificMetrics: {
+        correctAnswers: 10,
+        questionsAnswered: 10,
+        avgResponseTimeMs: 3500,
+      },
+    };
+
+    await historyRepository.saveSession(lqRecord1);
+    await historyRepository.saveSession(lqRecord2);
+
+    const sessions = await historyRepository.getSessions();
+    expect(sessions).toHaveLength(2);
+
+    const summary = await historyRepository.getHistorySummary();
+    const lqStats = summary.gameStats['logic-quest'];
+    expect(lqStats).toBeDefined();
+    expect(lqStats.sessionsCount).toBe(2);
+    expect(lqStats.highestScore).toBe(3800);
+    expect(lqStats.highestLevel).toBe(6);
+    expect(lqStats.avgAccuracy).toBe(95); // (90 + 100) / 2
+    expect(lqStats.avgResponseTimeMs).toBe(4000); // (4500 + 3500) / 2
+  });
+
   it('clears history completely', async () => {
     await historyRepository.saveSession(sampleMMRecord);
     expect(await historyRepository.getSessions()).toHaveLength(1);

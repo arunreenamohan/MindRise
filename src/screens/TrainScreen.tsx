@@ -122,7 +122,8 @@ export const TrainScreen: React.FC = () => {
           const isPlayable =
             game.status === 'ready-phase2' ||
             game.status === 'ready-phase3' ||
-            game.status === 'ready-phase5';
+            game.status === 'ready-phase5' ||
+            game.status === 'ready-phase6';
 
           return (
             <Card

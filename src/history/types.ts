@@ -13,6 +13,9 @@ export interface GameSpecificMetrics {
   validHits?: number;
   falseStarts?: number;
   timeouts?: number;
+  correctAnswers?: number;
+  questionsAnswered?: number;
+  avgResponseTimeMs?: number;
   [key: string]: unknown;
 }
 
@@ -42,6 +45,7 @@ export interface GamePerformanceSummary {
   perfectRoundsTotal: number;
   bestReactionMs?: number;
   avgReactionMs?: number;
+  avgResponseTimeMs?: number;
 }
 
 export interface HistorySummary {

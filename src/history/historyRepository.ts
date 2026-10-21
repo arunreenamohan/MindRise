@@ -335,6 +335,15 @@ class HistoryRepository {
             ? Math.round(avgReactionTimes.reduce((sum, v) => sum + v, 0) / avgReactionTimes.length)
             : undefined;
 
+        const avgLogicResponses = records
+          .map((r) => Number(r.gameSpecificMetrics?.avgResponseTimeMs))
+          .filter((v) => Number.isFinite(v) && v > 0);
+
+        const overallAvgLogicMs =
+          avgLogicResponses.length > 0
+            ? Math.round(avgLogicResponses.reduce((sum, v) => sum + v, 0) / avgLogicResponses.length)
+            : undefined;
+
         gameStats[gameId] = {
           sessionsCount: count,
           highestScore,
@@ -344,6 +353,7 @@ class HistoryRepository {
           maxDigitSpan: gameId === 'number-recall' ? maxDigitSpan : undefined,
           bestReactionMs: gameId === 'quick-reaction' ? bestReactionMs : undefined,
           avgReactionMs: gameId === 'quick-reaction' ? overallAvgReactionMs : undefined,
+          avgResponseTimeMs: gameId === 'logic-quest' ? overallAvgLogicMs : undefined,
         };
       }
     });

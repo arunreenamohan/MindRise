@@ -162,10 +162,10 @@ export const GAMES_REGISTRY: Record<string, GameDefinition> = {
     specs: {
       estimatedDurationMins: 3,
       totalRounds: 10,
-      difficultyLevels: 8,
+      difficultyLevels: 6,
       adaptivePacing: true,
     },
-    status: 'in-development',
+    status: 'ready-phase6',
     accentColorKey: 'logic',
     isFlagship: false,
   },

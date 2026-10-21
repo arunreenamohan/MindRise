@@ -114,6 +114,7 @@ export interface Translations {
     maxSpanLabel: string;
     bestReactionLabel: string;
     avgReactionLabel: string;
+    avgTimeLabel: string;
     roadmapDrillsTitle: string;
     sessionsCountLabel: string;
   };
@@ -248,5 +249,39 @@ export interface Translations {
     countdownHint: string;
     scoreSubtitle: string;
     ms: string;
+  };
+  logicQuest: {
+    gameTitle: string;
+    questionCounter: string;
+    levelLabel: string;
+    scoreLabel: string;
+    categoryNumberSequence: string;
+    categoryOddOneOut: string;
+    categoryDeductive: string;
+    selectPrompt: string;
+    submitCta: string;
+    nextQuestionCta: string;
+    correctFeedback: string;
+    incorrectFeedback: string;
+    explanationTitle: string;
+    pausedTitle: string;
+    resumeCta: string;
+    restartCta: string;
+    quitCta: string;
+    quitConfirmTitle: string;
+    quitConfirmMessage: string;
+    sessionCompleteTitle: string;
+    sessionCompleteSubtitle: string;
+    finalScoreLabel: string;
+    accuracyLabel: string;
+    highestLevelLabel: string;
+    correctQuestionsLabel: string;
+    avgTimeLabel: string;
+    playAgainCta: string;
+    finishCta: string;
+    keepPlayingCta: string;
+    exitSessionCta: string;
+    scoreSubtitle: string;
+    secondsShort: string;
   };
 }
