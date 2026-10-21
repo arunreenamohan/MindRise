@@ -1,0 +1,178 @@
+import { GameDefinition } from './types';
+
+export const GAMES_REGISTRY: Record<string, GameDefinition> = {
+  'memory-matrix': {
+    id: 'memory-matrix',
+    nameKey: 'memoryMatrix',
+    defaultName: 'Memory Matrix',
+    category: 'memory',
+    categoryLabel: 'Spatial Memory',
+    shortDescription: 'Memorize and reproduce expanding matrices of illuminated tiles.',
+    detailedInstructions: [
+      'A grid will appear with specific tiles highlighted in vibrant violet.',
+      'Study the grid pattern carefully for 3 seconds before the tiles turn face-down.',
+      'Tap only the tiles that were illuminated to advance to the next level.',
+      'Grid size and illuminated tile count scale adaptively as your accuracy improves.',
+    ],
+    cognitiveBenefits: [
+      'Visuospatial working memory',
+      'Short-term visual recall speed',
+      'Pattern grouping and chunking efficiency',
+    ],
+    specs: {
+      estimatedDurationMins: 3,
+      totalRounds: 10,
+      difficultyLevels: 12,
+      adaptivePacing: true,
+    },
+    status: 'ready-phase2',
+    accentColorKey: 'memory',
+    isFlagship: true,
+  },
+  'number-recall': {
+    id: 'number-recall',
+    nameKey: 'numberRecall',
+    defaultName: 'Number Recall',
+    category: 'memory',
+    categoryLabel: 'Working Memory',
+    shortDescription: 'Retain and recite ascending numerical sequences under strict time constraints.',
+    detailedInstructions: [
+      'A sequence of numerical digits will be shown one at a time on screen.',
+      'Keep the full sequence active in your working memory buffer.',
+      'Enter the numbers in forward or reverse order as prompted.',
+      'Span expands from 4 up to 9 digits as your digit-span capacity grows.',
+    ],
+    cognitiveBenefits: [
+      'Auditory & phonological loop capacity',
+      'Cognitive holding capacity',
+      'Mental manipulation of serial sequences',
+    ],
+    specs: {
+      estimatedDurationMins: 3,
+      totalRounds: 8,
+      difficultyLevels: 8,
+      adaptivePacing: true,
+    },
+    status: 'in-development',
+    accentColorKey: 'memory',
+    isFlagship: false,
+  },
+  'focus-finder': {
+    id: 'focus-finder',
+    nameKey: 'focusFinder',
+    defaultName: 'Focus Finder',
+    category: 'attention',
+    categoryLabel: 'Selective Attention',
+    shortDescription: 'Pinpoint subtle target anomalies amidst dynamic visual distractors.',
+    detailedInstructions: [
+      'A visual array of similar geometric shapes will fill the display.',
+      'Locate the single anomaly with an altered orientation or distinct shade.',
+      'Tap the target as rapidly and accurately as possible.',
+      'Flanker interference and visual noise increase on higher stages.',
+    ],
+    cognitiveBenefits: [
+      'Selective visual search',
+      'Suppression of irrelevant flanker distractors',
+      'Perceptual processing speed',
+    ],
+    specs: {
+      estimatedDurationMins: 2,
+      totalRounds: 12,
+      difficultyLevels: 10,
+      adaptivePacing: true,
+    },
+    status: 'in-development',
+    accentColorKey: 'attention',
+    isFlagship: false,
+  },
+  'pattern-master': {
+    id: 'pattern-master',
+    nameKey: 'patternMaster',
+    defaultName: 'Pattern Master',
+    category: 'problemSolving',
+    categoryLabel: 'Abstract Reasoning',
+    shortDescription: 'Decipher complex geometric rules and complete missing matrix sequences.',
+    detailedInstructions: [
+      'Examine a 3x3 matrix where the final bottom-right tile is missing.',
+      'Deduce the mathematical and geometric rule governing rows and columns.',
+      'Select the correct matching candidate from the answer options below.',
+      'Combines rotation, subtraction, and symbolic logic principles.',
+    ],
+    cognitiveBenefits: [
+      'Fluid intelligence (Gf)',
+      'Relational abstraction',
+      'Inductive problem solving',
+    ],
+    specs: {
+      estimatedDurationMins: 4,
+      totalRounds: 8,
+      difficultyLevels: 10,
+      adaptivePacing: false,
+    },
+    status: 'in-development',
+    accentColorKey: 'problemSolving',
+    isFlagship: false,
+  },
+  'quick-reaction': {
+    id: 'quick-reaction',
+    nameKey: 'quickReaction',
+    defaultName: 'Quick Reaction',
+    category: 'speed',
+    categoryLabel: 'Processing Speed',
+    shortDescription: 'Tap split-second sensory triggers with millisecond precision.',
+    detailedInstructions: [
+      'Keep your finger resting closely above the reaction surface.',
+      'Wait for the color shift from warning amber to trigger violet.',
+      'Tap instantaneously when the trigger activates without false-starting.',
+      'Measure your exact reaction latency in milliseconds over multiple trials.',
+    ],
+    cognitiveBenefits: [
+      'Simple & choice reaction time',
+      'Sensorimotor response inhibition',
+      'Vigilance and alertness maintenance',
+    ],
+    specs: {
+      estimatedDurationMins: 2,
+      totalRounds: 5,
+      difficultyLevels: 6,
+      adaptivePacing: false,
+    },
+    status: 'in-development',
+    accentColorKey: 'speed',
+    isFlagship: false,
+  },
+  'logic-quest': {
+    id: 'logic-quest',
+    nameKey: 'logicQuest',
+    defaultName: 'Logic Quest',
+    category: 'logic',
+    categoryLabel: 'Deductive Logic',
+    shortDescription: 'Evaluate conditional propositions and relational syllogisms swiftly.',
+    detailedInstructions: [
+      'Read two initial conditional premises displayed on screen.',
+      'Evaluate whether the concluding statement is strictly logically valid.',
+      'Tap TRUE or FALSE before the decision countdown timer elapses.',
+      'Introduces negation, quantifiers, and counterfactual reasoning.',
+    ],
+    cognitiveBenefits: [
+      'Formal deductive reasoning',
+      'Resistance to confirmation bias',
+      'Rapid semantic evaluation',
+    ],
+    specs: {
+      estimatedDurationMins: 3,
+      totalRounds: 10,
+      difficultyLevels: 8,
+      adaptivePacing: true,
+    },
+    status: 'in-development',
+    accentColorKey: 'logic',
+    isFlagship: false,
+  },
+};
+
+export const GAMES_LIST: GameDefinition[] = Object.values(GAMES_REGISTRY);
+
+export const getGameById = (id: string): GameDefinition | undefined => {
+  return GAMES_REGISTRY[id];
+};
