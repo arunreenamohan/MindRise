@@ -25,4 +25,24 @@ describe('MindRise Localization (EN & ML)', () => {
     expect(ml.home.startWorkoutCta).toBeTruthy();
     expect(ml.gameIntro.phase2ReadyNote).toBeTruthy();
   });
+
+  it('provides all progress and history strings in English and Malayalam', () => {
+    expect(en.progress.screenTitle).toBe('Cognitive Analytics');
+    expect(ml.progress.screenTitle).toBeTruthy();
+
+    expect(en.progress.recentActivityTitle).toBe('Recent Training Sessions');
+    expect(ml.progress.recentActivityTitle).toBeTruthy();
+
+    expect(en.progress.bestStreakLabel).toBe('Best Streak');
+    expect(ml.progress.bestStreakLabel).toBeTruthy();
+
+    expect(en.progress.days).toBe('days');
+    expect(ml.progress.days).toBeTruthy();
+
+    expect(en.progress.calibrated).toBe('Calibrated');
+    expect(ml.progress.calibrated).toBeTruthy();
+
+    expect(en.home.streakActiveDesc).toBeTruthy();
+    expect(ml.home.streakActiveDesc).toBeTruthy();
+  });
 });

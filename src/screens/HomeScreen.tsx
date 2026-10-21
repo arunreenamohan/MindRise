@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../navigation/types';
@@ -19,6 +19,7 @@ import {
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
 import { GameId } from '../games/types';
+import { historyRepository } from '../history';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
@@ -29,6 +30,26 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { colors, typography } = useTheme();
   const { t } = useLocalization();
+  const [streak, setStreak] = useState<number>(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      historyRepository
+        .getHistorySummary()
+        .then((summary) => {
+          if (isMounted) {
+            setStreak(summary.currentStreak);
+          }
+        })
+        .catch(() => {
+          // Graceful fallback to existing state
+        });
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const handleStartDailyWorkout = () => {
     // Navigates directly to the flagship drill for Phase 2/start
@@ -88,7 +109,7 @@ export const HomeScreen: React.FC = () => {
         />
       </Card>
 
-      {/* Streak Section (Honest Empty State) */}
+      {/* Streak Section */}
       <View style={styles.sectionHeader}>
         <Text style={[typography.h3, { color: colors.textPrimary }]}>
           {t.home.streakTitle}
@@ -102,10 +123,10 @@ export const HomeScreen: React.FC = () => {
           </View>
           <View style={styles.streakInfo}>
             <Text style={[typography.h2, { color: colors.textPrimary }]}>
-              {t.home.streakEmptyCount}
+              {streak > 0 ? `${streak} ${t.progress.days}` : t.home.streakEmptyCount}
             </Text>
             <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 2 }]}>
-              {t.home.streakEmptyDesc}
+              {streak > 0 ? t.home.streakActiveDesc : t.home.streakEmptyDesc}
             </Text>
           </View>
         </View>

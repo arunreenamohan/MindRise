@@ -47,6 +47,7 @@ export interface Translations {
     streakTitle: string;
     streakEmptyCount: string;
     streakEmptyDesc: string;
+    streakActiveDesc: string;
     quickTrainTitle: string;
     viewAllGames: string;
     mindQuote: string;
@@ -89,6 +90,16 @@ export interface Translations {
     statWorkouts: string;
     statMinutes: string;
     statStreak: string;
+    recentActivityTitle: string;
+    bestStreakLabel: string;
+    days: string;
+    pts: string;
+    calibrated: string;
+    uncalibrated: string;
+    errorLoading: string;
+    retryCta: string;
+    sessionOutcomeCompleted: string;
+    sessionOutcomeConcluded: string;
   };
   profile: {
     screenTitle: string;

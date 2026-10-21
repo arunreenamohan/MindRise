@@ -35,6 +35,7 @@ import {
   generateSequence,
   getNumberRecallLevelConfig,
 } from '../games/number-recall';
+import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey } from '../history';
 
 export const NumberRecallGameScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -45,6 +46,9 @@ export const NumberRecallGameScreen: React.FC = () => {
   const [state, dispatch] = useReducer(numberRecallReducer, undefined, () =>
     createInitialNumberRecallState(1)
   );
+
+  const sessionIdRef = useRef<string>(historyRepository.generateSessionId('number-recall'));
+  const savedSessionIdRef = useRef<string | null>(null);
 
   const [countdown, setCountdown] = useState<number>(3);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
@@ -139,6 +143,35 @@ export const NumberRecallGameScreen: React.FC = () => {
     };
   }, [clearTimers]);
 
+  // 5. Automatic Session History Persistence
+  useEffect(() => {
+    if ((state.phase === 'completed' || state.phase === 'game-over') && state.sessionStats) {
+      if (savedSessionIdRef.current !== sessionIdRef.current) {
+        savedSessionIdRef.current = sessionIdRef.current;
+        const stats = state.sessionStats;
+        historyRepository.saveSession({
+          id: sessionIdRef.current,
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+          gameId: 'number-recall',
+          startedAt: new Date(state.sessionStartTime || Date.now()).toISOString(),
+          completedAt: stats.completedAt,
+          dateKey: getLocalDateKey(new Date(stats.completedAt)),
+          outcome: state.phase === 'completed' ? 'completed' : 'game-over',
+          finalScore: stats.finalScore,
+          accuracyPercentage: stats.accuracyPercentage,
+          roundsCompleted: stats.roundsCompleted,
+          totalRounds: stats.totalRounds,
+          highestLevel: stats.highestLevel,
+          durationMs: stats.totalDurationMs,
+          gameSpecificMetrics: {
+            maxDigitSpan: stats.maxDigitSpan,
+            perfectRounds: stats.perfectRounds,
+          },
+        });
+      }
+    }
+  }, [state.phase, state.sessionStats, state.sessionStartTime]);
+
   // Unmount Cleanup
   useEffect(() => {
     return () => clearTimers();
@@ -181,6 +214,8 @@ export const NumberRecallGameScreen: React.FC = () => {
   const handleRestart = useCallback(() => {
     clearTimers();
     setCountdown(3);
+    sessionIdRef.current = historyRepository.generateSessionId('number-recall');
+    savedSessionIdRef.current = null;
     dispatch({ type: 'RESTART_GAME' });
   }, [clearTimers]);
 
