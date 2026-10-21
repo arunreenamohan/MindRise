@@ -33,9 +33,11 @@ export const GameIntroScreen: React.FC = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
 
-  const game = getGameById(route.params.gameId) || getGameById('memory-matrix')!;
+  const gameId = route.params?.gameId;
+  const game = (gameId ? getGameById(gameId) : undefined) || getGameById('memory-matrix')!;
   const isPhase2Ready = game.status === 'ready-phase2';
   const accentColor = colors[game.accentColorKey] || colors.primary;
+
 
   const getGameIcon = (id: string, color: string) => {
     switch (id) {

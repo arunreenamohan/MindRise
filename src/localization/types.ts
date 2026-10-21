@@ -107,4 +107,29 @@ export interface Translations {
     privacyDescription: string;
     appVersion: string;
   };
+  memoryMatrix: {
+    gameTitle: string;
+    memorizePhase: string;
+    recallPhase: string;
+    roundCounter: string;
+    levelLabel: string;
+    scoreLabel: string;
+    strikesLabel: string;
+    perfectRound: string;
+    roundFailed: string;
+    pausedTitle: string;
+    resumeCta: string;
+    restartCta: string;
+    quitCta: string;
+    quitConfirmTitle: string;
+    quitConfirmMessage: string;
+    sessionCompleteTitle: string;
+    gameOverTitle: string;
+    finalScoreLabel: string;
+    accuracyLabel: string;
+    highestLevelLabel: string;
+    perfectRoundsLabel: string;
+    playAgainCta: string;
+    finishCta: string;
+  };
 }

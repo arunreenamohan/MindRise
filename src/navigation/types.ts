@@ -1,4 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { GameId } from '../games/types';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -10,5 +11,6 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   Onboarding: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
-  GameIntro: { gameId: string };
+  GameIntro: { gameId: GameId };
 };
+

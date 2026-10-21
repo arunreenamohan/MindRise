@@ -18,6 +18,7 @@ import {
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
+import { GameId } from '../games/types';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
@@ -38,9 +39,10 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('Train');
   };
 
-  const handleOpenGame = (gameId: string) => {
+  const handleOpenGame = (gameId: GameId) => {
     navigation.navigate('GameIntro', { gameId });
   };
+
 
   return (
     <ScreenContainer scrollable={true} contentContainerStyle={styles.container}>

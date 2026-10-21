@@ -41,6 +41,12 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+!ios/.xcode.env
+
 # fastlane
 #
 # It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the

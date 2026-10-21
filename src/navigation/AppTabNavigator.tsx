@@ -11,6 +11,22 @@ import { useLocalization } from '../localization/LocalizationContext';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+const renderHomeTabIcon = ({ color, size }: { color: string; size: number }) => (
+  <HomeIcon size={size || 22} color={color} />
+);
+
+const renderTrainTabIcon = ({ color, size }: { color: string; size: number }) => (
+  <DumbbellIcon size={size || 22} color={color} />
+);
+
+const renderProgressTabIcon = ({ color, size }: { color: string; size: number }) => (
+  <ChartIcon size={size || 22} color={color} />
+);
+
+const renderProfileTabIcon = ({ color, size }: { color: string; size: number }) => (
+  <UserIcon size={size || 22} color={color} />
+);
+
 export const AppTabNavigator: React.FC = () => {
   const { colors } = useTheme();
   const { t } = useLocalization();
@@ -41,7 +57,7 @@ export const AppTabNavigator: React.FC = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: t.navigation.home,
-          tabBarIcon: ({ color, size }) => <HomeIcon size={size || 22} color={color} />,
+          tabBarIcon: renderHomeTabIcon,
         }}
       />
       <Tab.Screen
@@ -49,7 +65,7 @@ export const AppTabNavigator: React.FC = () => {
         component={TrainScreen}
         options={{
           tabBarLabel: t.navigation.train,
-          tabBarIcon: ({ color, size }) => <DumbbellIcon size={size || 22} color={color} />,
+          tabBarIcon: renderTrainTabIcon,
         }}
       />
       <Tab.Screen
@@ -57,7 +73,7 @@ export const AppTabNavigator: React.FC = () => {
         component={ProgressScreen}
         options={{
           tabBarLabel: t.navigation.progress,
-          tabBarIcon: ({ color, size }) => <ChartIcon size={size || 22} color={color} />,
+          tabBarIcon: renderProgressTabIcon,
         }}
       />
       <Tab.Screen
@@ -65,9 +81,10 @@ export const AppTabNavigator: React.FC = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: t.navigation.profile,
-          tabBarIcon: ({ color, size }) => <UserIcon size={size || 22} color={color} />,
+          tabBarIcon: renderProfileTabIcon,
         }}
       />
     </Tab.Navigator>
   );
 };
+

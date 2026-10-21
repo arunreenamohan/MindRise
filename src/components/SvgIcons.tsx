@@ -220,3 +220,42 @@ export const SparklesIcon: React.FC<IconProps> = ({ size = 24, color = '#7C5CFC'
     />
   </Svg>
 );
+
+export const PauseIcon: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF', strokeWidth = 2 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect x="6" y="4" width="4" height="16" rx="1" stroke={color} strokeWidth={strokeWidth} />
+    <Rect x="14" y="4" width="4" height="16" rx="1" stroke={color} strokeWidth={strokeWidth} />
+  </Svg>
+);
+
+export const RotateCcwIcon: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF', strokeWidth = 2 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M3 3v5h5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const XIcon: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF', strokeWidth = 2 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Line x1="18" y1="6" x2="6" y2="18" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    <Line x1="6" y1="6" x2="18" y2="18" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const HeartIcon: React.FC<IconProps & { filled?: boolean }> = ({
+  size = 24,
+  color = '#FF5376',
+  strokeWidth = 2,
+  filled = false,
+}) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'}>
+    <Path
+      d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
