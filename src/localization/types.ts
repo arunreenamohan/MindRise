@@ -122,6 +122,22 @@ export interface Translations {
     avgTimeLabel: string;
     roadmapDrillsTitle: string;
     sessionsCountLabel: string;
+    statDailyWorkouts: string;
+    statGameSessions: string;
+    statWorkoutStreak: string;
+    statPracticeStreak: string;
+    weeklyActivityTitle: string;
+    weeklyActivitySubtitle: string;
+    workoutDoneBadge: string;
+    drillsOnlyBadge: string;
+    restDayBadge: string;
+    trendTitle: string;
+    trendEmpty: string;
+    todayLabel: string;
+    bestReflexLabel: string;
+    bestSearchLabel: string;
+    allDrillsActiveTitle: string;
+    allDrillsActiveSubtitle: string;
   };
   profile: {
     screenTitle: string;

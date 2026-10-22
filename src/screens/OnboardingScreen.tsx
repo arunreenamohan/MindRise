@@ -9,6 +9,7 @@ import { StatBadge } from '../components/StatBadge';
 import { BrainIcon, ZapIcon, ClockIcon, ShieldCheckIcon, SparklesIcon } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
+import { setOnboardingCompleted } from '../storage';
 
 type OnboardingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
@@ -21,6 +22,7 @@ export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useLocalization();
 
   const handleGetStarted = () => {
+    setOnboardingCompleted(true).catch(() => {});
     navigation.replace('MainTabs', { screen: 'Home' });
   };
 

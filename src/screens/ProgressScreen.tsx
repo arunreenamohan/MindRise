@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -9,6 +9,8 @@ import { Header } from '../components/Header';
 import { Card } from '../components/Card';
 import { StatBadge } from '../components/StatBadge';
 import { Button } from '../components/Button';
+import { ScoreTrendSparkline } from '../components/ScoreTrendSparkline';
+import { WeeklyActivityMatrix } from '../components/WeeklyActivityMatrix';
 import {
   BrainIcon,
   ChartIcon,
@@ -20,15 +22,16 @@ import {
   LayersIcon,
   ZapIcon,
   CpuIcon,
+  CheckCircleIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
 import {
   historyRepository,
   GameSessionRecord,
-  HistorySummary,
-  calculateDrillPerformanceIndex,
+  aggregateDashboardData,
 } from '../history';
+import { workoutRepository, DailyWorkoutRecord } from '../workout';
 
 type ProgressScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Progress'>,
@@ -41,7 +44,7 @@ export const ProgressScreen: React.FC = () => {
   const { t } = useLocalization();
 
   const [sessions, setSessions] = useState<GameSessionRecord[]>([]);
-  const [summary, setSummary] = useState<HistorySummary | null>(null);
+  const [workouts, setWorkouts] = useState<DailyWorkoutRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
 
@@ -49,12 +52,12 @@ export const ProgressScreen: React.FC = () => {
     try {
       setIsLoading(true);
       setHasError(false);
-      const [fetchedSessions, fetchedSummary] = await Promise.all([
-        historyRepository.getSessions(25),
-        historyRepository.getHistorySummary(),
+      const [fetchedSessions, fetchedWorkouts] = await Promise.all([
+        historyRepository.getSessions(50),
+        workoutRepository.getAllWorkouts(),
       ]);
       setSessions(fetchedSessions);
-      setSummary(fetchedSummary);
+      setWorkouts(fetchedWorkouts);
     } catch {
       setHasError(true);
     } finally {
@@ -62,11 +65,19 @@ export const ProgressScreen: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    loadProgressData();
+  }, [loadProgressData]);
+
   useFocusEffect(
     useCallback(() => {
       loadProgressData();
     }, [loadProgressData])
   );
+
+  const dashboard = useMemo(() => {
+    return aggregateDashboardData(sessions, workouts, new Date());
+  }, [sessions, workouts]);
 
   const handleStartWorkout = () => {
     navigation.navigate('Train');
@@ -124,12 +135,7 @@ export const ProgressScreen: React.FC = () => {
     }
   };
 
-  const totalMinutes = summary ? Math.round(summary.totalDurationMs / 60000) : 0;
-
-  // Transparent Drill Performance Index: average score across completed qualifying workouts
-  const performanceIndex = summary
-    ? calculateDrillPerformanceIndex(summary.totalScore, summary.totalWorkouts)
-    : null;
+  const performanceIndex = dashboard.performanceIndex;
 
   return (
     <ScreenContainer scrollable={true} contentContainerStyle={styles.container}>
@@ -158,7 +164,7 @@ export const ProgressScreen: React.FC = () => {
         </Card>
       )}
 
-      {/* Drill Performance Hero Card */}
+      {/* Drill Score Average Hero Card */}
       <Card variant="highlighted" style={styles.indexCard}>
         <View style={styles.indexHeaderRow}>
           <StatBadge
@@ -181,7 +187,7 @@ export const ProgressScreen: React.FC = () => {
             </Text>
             <Text style={[typography.bodySmall, { color: colors.textMuted, marginTop: 4 }]}>
               {performanceIndex !== null
-                ? `${summary?.totalWorkouts} ${t.progress.statWorkouts.toLowerCase()}`
+                ? `${dashboard.totalGameSessions} ${t.progress.statGameSessions.toLowerCase()}`
                 : t.progress.mindIndexEmpty}
             </Text>
           </View>
@@ -204,24 +210,34 @@ export const ProgressScreen: React.FC = () => {
         </Text>
       </Card>
 
-      {/* Stats Summary Grid */}
+      {/* KPI Stats Summary Grid: Separate Daily Workouts from Game Sessions */}
       <View style={styles.statsGrid}>
+        <Card variant="elevated" style={styles.statCard}>
+          <CheckCircleIcon size={20} color="#10B981" />
+          <Text style={[typography.h2, { color: colors.textPrimary, marginTop: 8 }]}>
+            {dashboard.totalCompletedWorkouts}
+          </Text>
+          <Text style={[typography.caption, styles.statLabel, { color: colors.textMuted }]}>
+            {t.progress.statDailyWorkouts}
+          </Text>
+        </Card>
+
         <Card variant="elevated" style={styles.statCard}>
           <TargetIcon size={20} color={colors.attention} />
           <Text style={[typography.h2, { color: colors.textPrimary, marginTop: 8 }]}>
-            {summary?.totalWorkouts ?? 0}
+            {dashboard.totalGameSessions}
           </Text>
-          <Text style={[typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
-            {t.progress.statWorkouts}
+          <Text style={[typography.caption, styles.statLabel, { color: colors.textMuted }]}>
+            {t.progress.statGameSessions}
           </Text>
         </Card>
 
         <Card variant="elevated" style={styles.statCard}>
           <ClockIcon size={20} color={colors.primaryLight} />
           <Text style={[typography.h2, { color: colors.textPrimary, marginTop: 8 }]}>
-            {totalMinutes}
+            {dashboard.totalTrainingMinutes}
           </Text>
-          <Text style={[typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
+          <Text style={[typography.caption, styles.statLabel, { color: colors.textMuted }]}>
             {t.progress.statMinutes}
           </Text>
         </Card>
@@ -229,25 +245,43 @@ export const ProgressScreen: React.FC = () => {
         <Card variant="elevated" style={styles.statCard}>
           <FlameIcon size={20} color={colors.speed} />
           <Text style={[typography.h2, { color: colors.textPrimary, marginTop: 8 }]}>
-            {summary?.currentStreak ?? 0}
+            {dashboard.workoutStreak.currentStreak}
           </Text>
-          <Text style={[typography.caption, { color: colors.textMuted, marginTop: 2 }]}>
-            {t.progress.statStreak}
+          <Text style={[typography.caption, styles.statLabel, { color: colors.textMuted }]}>
+            {t.progress.statWorkoutStreak}
           </Text>
         </Card>
       </View>
 
       {/* Best Streak Banner (if user has active streaks) */}
-      {(summary?.bestStreak ?? 0) > 0 && (
+      {Math.max(dashboard.workoutStreak.bestStreak, dashboard.sessionStreak.bestStreak) > 0 && (
         <Card variant="outlined" style={styles.streakBanner}>
           <View style={styles.streakBannerRow}>
             <FlameIcon size={18} color={colors.speed} />
             <Text style={[typography.bodySmall, { color: colors.textPrimary, marginLeft: 8 }]}>
-              {t.progress.bestStreakLabel}: <Text style={{ fontWeight: '700' }}>{summary?.bestStreak}</Text> {t.progress.days}
+              {t.progress.bestStreakLabel}:{' '}
+              <Text style={styles.streakBoldText}>
+                {Math.max(dashboard.workoutStreak.bestStreak, dashboard.sessionStreak.bestStreak)}
+              </Text>{' '}
+              {t.progress.days}
             </Text>
           </View>
         </Card>
       )}
+
+      {/* Seven-Day Activity Calendar Matrix */}
+      <View style={styles.sectionHeader}>
+        <Text style={[typography.h3, { color: colors.textPrimary }]}>
+          {t.progress.weeklyActivityTitle}
+        </Text>
+        <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
+          {t.progress.weeklyActivitySubtitle}
+        </Text>
+      </View>
+
+      <Card variant="elevated" style={styles.weeklyCard}>
+        <WeeklyActivityMatrix days={dashboard.last7DaysActivity} />
+      </Card>
 
       {/* Game Performance Breakdown Section */}
       <View style={styles.sectionHeader}>
@@ -257,7 +291,7 @@ export const ProgressScreen: React.FC = () => {
       </View>
 
       <View style={styles.gameCardsContainer}>
-        {/* Memory Matrix Breakdown */}
+        {/* 1. Memory Matrix Breakdown */}
         <Card variant="elevated" style={styles.gameStatsCard}>
           <View style={styles.gameStatsHeader}>
             <View style={styles.gameStatsTitleGroup}>
@@ -269,9 +303,21 @@ export const ProgressScreen: React.FC = () => {
               </Text>
             </View>
             <StatBadge
-              label={`${summary?.gameStats['memory-matrix']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              label={`${dashboard.gameStats['memory-matrix'].sessionsCount} ${t.progress.sessionsCountLabel}`}
               variant="primary"
               size="sm"
+            />
+          </View>
+
+          {/* Trend Sparkline */}
+          <View style={styles.trendContainer}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {t.progress.trendTitle}
+            </Text>
+            <ScoreTrendSparkline
+              scores={dashboard.gameStats['memory-matrix'].recentScores}
+              color={colors.primaryLight}
+              emptyLabel={t.progress.trendEmpty}
             />
           </View>
 
@@ -279,31 +325,31 @@ export const ProgressScreen: React.FC = () => {
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
               <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
-                {summary?.gameStats['memory-matrix']?.highestScore.toLocaleString() ?? '0'}
+                {dashboard.gameStats['memory-matrix'].highestScore.toLocaleString()}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
               <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
-                {summary?.gameStats['memory-matrix']?.avgAccuracy ?? 0}%
+                {dashboard.gameStats['memory-matrix'].avgAccuracy}%
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
               <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
-                Lvl {summary?.gameStats['memory-matrix']?.highestLevel ?? 1}
+                Lvl {dashboard.gameStats['memory-matrix'].highestLevel}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricPerfect}</Text>
               <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
-                {summary?.gameStats['memory-matrix']?.perfectRoundsTotal ?? 0}
+                {dashboard.gameStats['memory-matrix'].perfectRoundsTotal ?? 0}
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Number Recall Breakdown */}
+        {/* 2. Number Recall Breakdown */}
         <Card variant="elevated" style={styles.gameStatsCard}>
           <View style={styles.gameStatsHeader}>
             <View style={styles.gameStatsTitleGroup}>
@@ -315,9 +361,21 @@ export const ProgressScreen: React.FC = () => {
               </Text>
             </View>
             <StatBadge
-              label={`${summary?.gameStats['number-recall']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              label={`${dashboard.gameStats['number-recall'].sessionsCount} ${t.progress.sessionsCountLabel}`}
               variant="primary"
               size="sm"
+            />
+          </View>
+
+          {/* Trend Sparkline */}
+          <View style={styles.trendContainer}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {t.progress.trendTitle}
+            </Text>
+            <ScoreTrendSparkline
+              scores={dashboard.gameStats['number-recall'].recentScores}
+              color={colors.memory}
+              emptyLabel={t.progress.trendEmpty}
             />
           </View>
 
@@ -325,31 +383,31 @@ export const ProgressScreen: React.FC = () => {
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
               <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
-                {summary?.gameStats['number-recall']?.highestScore.toLocaleString() ?? '0'}
+                {dashboard.gameStats['number-recall'].highestScore.toLocaleString()}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
               <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
-                {summary?.gameStats['number-recall']?.avgAccuracy ?? 0}%
+                {dashboard.gameStats['number-recall'].avgAccuracy}%
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
               <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
-                Lvl {summary?.gameStats['number-recall']?.highestLevel ?? 1}
+                Lvl {dashboard.gameStats['number-recall'].highestLevel}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.maxSpanLabel}</Text>
               <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
-                {summary?.gameStats['number-recall']?.maxDigitSpan ?? 0}d
+                {dashboard.gameStats['number-recall'].maxDigitSpan ?? 0}d
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Quick Reaction Breakdown */}
+        {/* 3. Quick Reaction Breakdown */}
         <Card variant="elevated" style={styles.gameStatsCard}>
           <View style={styles.gameStatsHeader}>
             <View style={styles.gameStatsTitleGroup}>
@@ -361,9 +419,21 @@ export const ProgressScreen: React.FC = () => {
               </Text>
             </View>
             <StatBadge
-              label={`${summary?.gameStats['quick-reaction']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              label={`${dashboard.gameStats['quick-reaction'].sessionsCount} ${t.progress.sessionsCountLabel}`}
               variant="primary"
               size="sm"
+            />
+          </View>
+
+          {/* Trend Sparkline */}
+          <View style={styles.trendContainer}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {t.progress.trendTitle}
+            </Text>
+            <ScoreTrendSparkline
+              scores={dashboard.gameStats['quick-reaction'].recentScores}
+              color={colors.speed}
+              emptyLabel={t.progress.trendEmpty}
             />
           </View>
 
@@ -371,35 +441,35 @@ export const ProgressScreen: React.FC = () => {
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
               <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
-                {summary?.gameStats['quick-reaction']?.highestScore.toLocaleString() ?? '0'}
+                {dashboard.gameStats['quick-reaction'].highestScore.toLocaleString()}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
               <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
-                {summary?.gameStats['quick-reaction']?.avgAccuracy ?? 0}%
+                {dashboard.gameStats['quick-reaction'].avgAccuracy}%
               </Text>
             </View>
             <View style={styles.metricColumn}>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.bestReactionLabel}</Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.bestReflexLabel}</Text>
               <Text style={[typography.label, { color: colors.speed, marginTop: 4 }]}>
-                {summary?.gameStats['quick-reaction']?.bestReactionMs !== undefined
-                  ? `${summary.gameStats['quick-reaction'].bestReactionMs}ms`
+                {dashboard.gameStats['quick-reaction'].bestReactionMs !== undefined
+                  ? `${dashboard.gameStats['quick-reaction'].bestReactionMs}ms`
                   : '--'}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgReactionLabel}</Text>
               <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
-                {summary?.gameStats['quick-reaction']?.avgReactionMs !== undefined
-                  ? `${summary.gameStats['quick-reaction'].avgReactionMs}ms`
+                {dashboard.gameStats['quick-reaction'].avgReactionMs !== undefined
+                  ? `${dashboard.gameStats['quick-reaction'].avgReactionMs}ms`
                   : '--'}
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Logic Quest Breakdown */}
+        {/* 4. Logic Quest Breakdown */}
         <Card variant="elevated" style={styles.gameStatsCard}>
           <View style={styles.gameStatsHeader}>
             <View style={styles.gameStatsTitleGroup}>
@@ -411,9 +481,21 @@ export const ProgressScreen: React.FC = () => {
               </Text>
             </View>
             <StatBadge
-              label={`${summary?.gameStats['logic-quest']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              label={`${dashboard.gameStats['logic-quest'].sessionsCount} ${t.progress.sessionsCountLabel}`}
               variant="primary"
               size="sm"
+            />
+          </View>
+
+          {/* Trend Sparkline */}
+          <View style={styles.trendContainer}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {t.progress.trendTitle}
+            </Text>
+            <ScoreTrendSparkline
+              scores={dashboard.gameStats['logic-quest'].recentScores}
+              color={colors.primaryLight}
+              emptyLabel={t.progress.trendEmpty}
             />
           </View>
 
@@ -421,33 +503,33 @@ export const ProgressScreen: React.FC = () => {
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
               <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
-                {summary?.gameStats['logic-quest']?.highestScore.toLocaleString() ?? '0'}
+                {dashboard.gameStats['logic-quest'].highestScore.toLocaleString()}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
               <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
-                {summary?.gameStats['logic-quest']?.avgAccuracy ?? 0}%
+                {dashboard.gameStats['logic-quest'].avgAccuracy}%
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
               <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
-                Lvl {summary?.gameStats['logic-quest']?.highestLevel ?? 1}
+                Lvl {dashboard.gameStats['logic-quest'].highestLevel}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgTimeLabel}</Text>
               <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
-                {summary?.gameStats['logic-quest']?.avgResponseTimeMs !== undefined
-                  ? `${(summary.gameStats['logic-quest'].avgResponseTimeMs / 1000).toFixed(1)}s`
+                {dashboard.gameStats['logic-quest'].avgResponseTimeMs !== undefined
+                  ? `${(dashboard.gameStats['logic-quest'].avgResponseTimeMs / 1000).toFixed(1)}s`
                   : '--'}
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Focus Finder Breakdown */}
+        {/* 5. Focus Finder Breakdown */}
         <Card variant="elevated" style={styles.gameStatsCard}>
           <View style={styles.gameStatsHeader}>
             <View style={styles.gameStatsTitleGroup}>
@@ -459,9 +541,21 @@ export const ProgressScreen: React.FC = () => {
               </Text>
             </View>
             <StatBadge
-              label={`${summary?.gameStats['focus-finder']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              label={`${dashboard.gameStats['focus-finder'].sessionsCount} ${t.progress.sessionsCountLabel}`}
               variant="primary"
               size="sm"
+            />
+          </View>
+
+          {/* Trend Sparkline */}
+          <View style={styles.trendContainer}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {t.progress.trendTitle}
+            </Text>
+            <ScoreTrendSparkline
+              scores={dashboard.gameStats['focus-finder'].recentScores}
+              color={colors.attention}
+              emptyLabel={t.progress.trendEmpty}
             />
           </View>
 
@@ -469,33 +563,33 @@ export const ProgressScreen: React.FC = () => {
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
               <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
-                {summary?.gameStats['focus-finder']?.highestScore.toLocaleString() ?? '0'}
+                {dashboard.gameStats['focus-finder'].highestScore.toLocaleString()}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
               <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
-                {summary?.gameStats['focus-finder']?.avgAccuracy ?? 0}%
+                {dashboard.gameStats['focus-finder'].avgAccuracy}%
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
               <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
-                Lvl {summary?.gameStats['focus-finder']?.highestLevel ?? 1}
+                Lvl {dashboard.gameStats['focus-finder'].highestLevel}
               </Text>
             </View>
             <View style={styles.metricColumn}>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.focusFinder.bestFindTimeLabel}</Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.bestSearchLabel}</Text>
               <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
-                {summary?.gameStats['focus-finder']?.bestFindTimeMs !== undefined
-                  ? `${summary.gameStats['focus-finder'].bestFindTimeMs}ms`
+                {dashboard.gameStats['focus-finder'].bestFindTimeMs !== undefined
+                  ? `${dashboard.gameStats['focus-finder'].bestFindTimeMs}ms`
                   : '--'}
               </Text>
             </View>
           </View>
         </Card>
 
-        {/* Pattern Master Breakdown */}
+        {/* 6. Pattern Master Breakdown */}
         <Card variant="elevated" style={styles.gameStatsCard}>
           <View style={styles.gameStatsHeader}>
             <View style={styles.gameStatsTitleGroup}>
@@ -507,9 +601,21 @@ export const ProgressScreen: React.FC = () => {
               </Text>
             </View>
             <StatBadge
-              label={`${summary?.gameStats['pattern-master']?.sessionsCount ?? 0} ${t.progress.sessionsCountLabel}`}
+              label={`${dashboard.gameStats['pattern-master'].sessionsCount} ${t.progress.sessionsCountLabel}`}
               variant="primary"
               size="sm"
+            />
+          </View>
+
+          {/* Trend Sparkline */}
+          <View style={styles.trendContainer}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {t.progress.trendTitle}
+            </Text>
+            <ScoreTrendSparkline
+              scores={dashboard.gameStats['pattern-master'].recentScores}
+              color={colors.problemSolving}
+              emptyLabel={t.progress.trendEmpty}
             />
           </View>
 
@@ -517,26 +623,26 @@ export const ProgressScreen: React.FC = () => {
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.highScoreLabel}</Text>
               <Text style={[typography.label, { color: colors.primaryLight, marginTop: 4 }]}>
-                {summary?.gameStats['pattern-master']?.highestScore.toLocaleString() ?? '0'}
+                {dashboard.gameStats['pattern-master'].highestScore.toLocaleString()}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricAccuracy}</Text>
               <Text style={[typography.label, { color: colors.attention, marginTop: 4 }]}>
-                {summary?.gameStats['pattern-master']?.avgAccuracy ?? 0}%
+                {dashboard.gameStats['pattern-master'].avgAccuracy}%
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricLevel}</Text>
               <Text style={[typography.label, { color: colors.textPrimary, marginTop: 4 }]}>
-                Lvl {summary?.gameStats['pattern-master']?.highestLevel ?? 1}
+                Lvl {dashboard.gameStats['pattern-master'].highestLevel}
               </Text>
             </View>
             <View style={styles.metricColumn}>
               <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.avgTimeLabel}</Text>
               <Text style={[typography.label, { color: colors.success, marginTop: 4 }]}>
-                {summary?.gameStats['pattern-master']?.avgResponseTimeMs !== undefined
-                  ? `${(summary.gameStats['pattern-master'].avgResponseTimeMs / 1000).toFixed(1)}s`
+                {dashboard.gameStats['pattern-master'].avgResponseTimeMs !== undefined
+                  ? `${(dashboard.gameStats['pattern-master'].avgResponseTimeMs / 1000).toFixed(1)}s`
                   : '--'}
               </Text>
             </View>
@@ -544,16 +650,18 @@ export const ProgressScreen: React.FC = () => {
         </Card>
       </View>
 
-      {/* Full Suite Status Header */}
+      {/* Cognitive Battery Status Header */}
       <View style={styles.sectionHeader}>
         <Text style={[typography.h3, { color: colors.textPrimary }]}>
-          {t.progress.roadmapDrillsTitle}
+          {t.progress.allDrillsActiveTitle}
         </Text>
       </View>
 
       <Card variant="outlined" style={styles.roadmapCard}>
         <View style={styles.roadmapRow}>
-          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>All 6 Cognitive Drills Active</Text>
+          <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}>
+            {t.progress.allDrillsActiveSubtitle}
+          </Text>
           <StatBadge label="6/6 READY" variant="success" size="sm" />
         </View>
       </Card>
@@ -565,11 +673,11 @@ export const ProgressScreen: React.FC = () => {
         </Text>
       </View>
 
-      {isLoading && sessions.length === 0 ? (
+      {isLoading && dashboard.recentSessions.length === 0 ? (
         <View style={styles.loaderWrapper}>
           <ActivityIndicator size="small" color={colors.primaryLight} />
         </View>
-      ) : sessions.length === 0 ? (
+      ) : dashboard.recentSessions.length === 0 ? (
         /* Empty State */
         <Card variant="outlined" style={styles.emptyHistoryCard}>
           <View style={[styles.emptyIconCircle, { backgroundColor: colors.backgroundSecondary }]}>
@@ -598,7 +706,7 @@ export const ProgressScreen: React.FC = () => {
       ) : (
         /* Populated Recent Sessions List */
         <View style={styles.historyList}>
-          {sessions.map((session) => {
+          {dashboard.recentSessions.map((session) => {
             const outcomeLabel =
               session.outcome === 'completed'
                 ? t.progress.sessionOutcomeCompleted
@@ -609,8 +717,6 @@ export const ProgressScreen: React.FC = () => {
             const outcomeVariant =
               session.outcome === 'completed'
                 ? 'success'
-                : session.outcome === 'abandoned'
-                ? 'warning'
                 : 'warning';
 
             return (
@@ -693,10 +799,20 @@ export const ProgressScreen: React.FC = () => {
                     </View>
                   )}
 
+                  {session.gameSpecificMetrics?.bestFindTimeMs !== undefined && (
+                    <View style={styles.sessionMetricItem}>
+                      <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.bestSearchLabel}</Text>
+                      <Text style={[typography.label, { color: colors.attention, marginTop: 2 }]}>
+                        {session.gameSpecificMetrics.bestFindTimeMs}ms
+                      </Text>
+                    </View>
+                  )}
+
                   {session.gameSpecificMetrics?.perfectRounds !== undefined &&
                     session.gameSpecificMetrics?.maxDigitSpan === undefined &&
                     session.gameSpecificMetrics?.bestReactionMs === undefined &&
-                    session.gameSpecificMetrics?.avgResponseTimeMs === undefined && (
+                    session.gameSpecificMetrics?.avgResponseTimeMs === undefined &&
+                    session.gameSpecificMetrics?.bestFindTimeMs === undefined && (
                       <View style={styles.sessionMetricItem}>
                         <Text style={[typography.caption, { color: colors.textMuted }]}>{t.progress.metricPerfect}</Text>
                         <Text style={[typography.label, { color: colors.success, marginTop: 2 }]}>
@@ -758,13 +874,18 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 16,
   },
   statCard: {
     flex: 1,
-    padding: 12,
+    padding: 10,
     alignItems: 'center',
+  },
+  statLabel: {
+    marginTop: 2,
+    textAlign: 'center',
+    fontSize: 10,
   },
   streakBanner: {
     padding: 12,
@@ -776,9 +897,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  streakBoldText: {
+    fontWeight: '700',
+  },
   sectionHeader: {
-    marginBottom: 10,
-    marginTop: 6,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  weeklyCard: {
+    padding: 14,
+    marginBottom: 16,
   },
   disclaimerText: {
     marginTop: 10,
@@ -796,7 +924,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   gameStatsTitleGroup: {
     flexDirection: 'row',
@@ -808,6 +936,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  trendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    marginBottom: 8,
   },
   gameMetricsGrid: {
     flexDirection: 'row',
