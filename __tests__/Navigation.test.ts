@@ -63,6 +63,7 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
     const stackRoutes: (keyof RootStackParamList)[] = [
       'Onboarding',
       'MainTabs',
+      'DailyWorkout',
       'GameIntro',
       'MemoryMatrixGame',
       'NumberRecallGame',
@@ -71,6 +72,7 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
       'FocusFinderGame',
       'PatternMasterGame',
     ];
+    expect(stackRoutes).toContain('DailyWorkout');
     expect(stackRoutes).toContain('MemoryMatrixGame');
     expect(stackRoutes).toContain('NumberRecallGame');
     expect(stackRoutes).toContain('QuickReactionGame');
@@ -78,6 +80,23 @@ describe('MindRise Navigation Types and Parameter Contracts', () => {
     expect(stackRoutes).toContain('FocusFinderGame');
     expect(stackRoutes).toContain('PatternMasterGame');
     expect(stackRoutes).toContain('GameIntro');
-    expect(stackRoutes).toHaveLength(9);
+    expect(stackRoutes).toHaveLength(10);
+  });
+
+  it('validates workoutMode and drillIndex parameter contracts for game routes and GameIntro', () => {
+    const gameIntroParams: RootStackParamList['GameIntro'] = {
+      gameId: 'memory-matrix',
+      workoutMode: true,
+      drillIndex: 0,
+    };
+    expect(gameIntroParams.workoutMode).toBe(true);
+    expect(gameIntroParams.drillIndex).toBe(0);
+
+    const gameParams: RootStackParamList['MemoryMatrixGame'] = {
+      workoutMode: true,
+      drillIndex: 1,
+    };
+    expect(gameParams?.workoutMode).toBe(true);
+    expect(gameParams?.drillIndex).toBe(1);
   });
 });

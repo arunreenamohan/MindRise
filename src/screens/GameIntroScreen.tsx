@@ -63,18 +63,26 @@ export const GameIntroScreen: React.FC = () => {
   };
 
   const handleStartSession = () => {
-    if (game.id === 'memory-matrix') {
-      (navigation as any).navigate('MemoryMatrixGame');
-    } else if (game.id === 'number-recall') {
-      (navigation as any).navigate('NumberRecallGame');
-    } else if (game.id === 'quick-reaction') {
-      (navigation as any).navigate('QuickReactionGame');
-    } else if (game.id === 'logic-quest') {
-      (navigation as any).navigate('LogicQuestGame');
-    } else if (game.id === 'focus-finder') {
-      (navigation as any).navigate('FocusFinderGame');
-    } else if (game.id === 'pattern-master') {
-      (navigation as any).navigate('PatternMasterGame');
+    const screenMap: Record<string, keyof RootStackParamList> = {
+      'memory-matrix': 'MemoryMatrixGame',
+      'number-recall': 'NumberRecallGame',
+      'quick-reaction': 'QuickReactionGame',
+      'logic-quest': 'LogicQuestGame',
+      'focus-finder': 'FocusFinderGame',
+      'pattern-master': 'PatternMasterGame',
+    };
+
+    const targetScreen = screenMap[game.id];
+    if (targetScreen) {
+      const workoutParams = route.params?.workoutMode
+        ? { workoutMode: true, drillIndex: route.params.drillIndex }
+        : undefined;
+
+      if (route.params?.workoutMode && typeof (navigation as any).replace === 'function') {
+        (navigation as any).replace(targetScreen, workoutParams);
+      } else {
+        (navigation as any).navigate(targetScreen, workoutParams);
+      }
     } else {
       setModalVisible(true);
     }

@@ -137,6 +137,13 @@ export const ArrowLeftIcon: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF
   </Svg>
 );
 
+export const ArrowRightIcon: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF', strokeWidth = 2 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Line x1="5" y1="12" x2="19" y2="12" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    <Polyline points="12 5 19 12 12 19" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
 export const ChevronRightIcon: React.FC<IconProps> = ({ size = 24, color = '#94A3B8', strokeWidth = 2 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Polyline points="9 18 15 12 9 6" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />

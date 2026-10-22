@@ -10,7 +10,8 @@ import {
   AppStateStatus,
   BackHandler,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../navigation/types';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -26,6 +27,7 @@ import {
   ZapIcon,
   LayersIcon,
   DeleteIcon,
+  ArrowRightIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
@@ -35,10 +37,14 @@ import {
   generateSequence,
   getNumberRecallLevelConfig,
 } from '../games/number-recall';
-import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey } from '../history';
+import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey, GameSessionRecord } from '../history';
+import { workoutRepository } from '../workout';
+
+type NumberRecallRouteProp = RouteProp<RootStackParamList, 'NumberRecallGame'>;
 
 export const NumberRecallGameScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<NumberRecallRouteProp>();
   const { colors, typography, radius } = useTheme();
   const { t } = useLocalization();
   const { width } = useWindowDimensions();
@@ -149,7 +155,7 @@ export const NumberRecallGameScreen: React.FC = () => {
       if (savedSessionIdRef.current !== sessionIdRef.current) {
         savedSessionIdRef.current = sessionIdRef.current;
         const stats = state.sessionStats;
-        historyRepository.saveSession({
+        const sessionRecord: GameSessionRecord = {
           id: sessionIdRef.current,
           schemaVersion: CURRENT_SCHEMA_VERSION,
           gameId: 'number-recall',
@@ -167,10 +173,21 @@ export const NumberRecallGameScreen: React.FC = () => {
             maxDigitSpan: stats.maxDigitSpan,
             perfectRounds: stats.perfectRounds,
           },
-        });
+        };
+        historyRepository.saveSession(sessionRecord);
+
+        if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
+          workoutRepository
+            .recordDrillCompletion({
+              dateKey: sessionRecord.dateKey,
+              drillIndex: route.params.drillIndex,
+              sessionRecord,
+            })
+            .catch(() => {});
+        }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
 
   // Unmount Cleanup
   useEffect(() => {
@@ -358,20 +375,45 @@ export const NumberRecallGameScreen: React.FC = () => {
 
         {/* Actions */}
         <View style={styles.resultsActions}>
-          <Button
-            title={t.numberRecall.playAgainCta}
-            onPress={handleRestart}
-            variant="primary"
-            size="lg"
-            icon={<RotateCcwIcon size={18} color="#FFFFFF" />}
-          />
-          <Button
-            title={t.numberRecall.finishCta}
-            onPress={() => navigation.goBack()}
-            variant="secondary"
-            size="md"
-            style={styles.finishBtn}
-          />
+          {route.params?.workoutMode ? (
+            <>
+              <Button
+                title={
+                  route.params.drillIndex === 2
+                    ? t.dailyWorkout.viewSummaryCta
+                    : t.dailyWorkout.continueWorkoutCta
+                }
+                onPress={() => (navigation as any).navigate('DailyWorkout')}
+                variant="primary"
+                size="lg"
+                icon={<ArrowRightIcon size={18} color="#FFFFFF" />}
+              />
+              <Button
+                title={t.numberRecall.playAgainCta}
+                onPress={handleRestart}
+                variant="secondary"
+                size="md"
+                style={styles.finishBtn}
+              />
+            </>
+          ) : (
+            <>
+              <Button
+                title={t.numberRecall.playAgainCta}
+                onPress={handleRestart}
+                variant="primary"
+                size="lg"
+                icon={<RotateCcwIcon size={18} color="#FFFFFF" />}
+              />
+              <Button
+                title={t.numberRecall.finishCta}
+                onPress={() => navigation.goBack()}
+                variant="secondary"
+                size="md"
+                style={styles.finishBtn}
+              />
+            </>
+          )}
         </View>
       </ScreenContainer>
     );

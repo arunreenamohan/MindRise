@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { AppTabNavigator } from './AppTabNavigator';
+import { DailyWorkoutScreen } from '../screens/DailyWorkoutScreen';
 import { GameIntroScreen } from '../screens/GameIntroScreen';
 import { MemoryMatrixGameScreen } from '../screens/MemoryMatrixGameScreen';
 import { NumberRecallGameScreen } from '../screens/NumberRecallGameScreen';
@@ -28,6 +29,13 @@ export const RootNavigator: React.FC = () => {
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="MainTabs" component={AppTabNavigator} />
+      <Stack.Screen
+        name="DailyWorkout"
+        component={DailyWorkoutScreen}
+        options={{
+          presentation: 'card',
+        }}
+      />
       <Stack.Screen
         name="GameIntro"
         component={GameIntroScreen}

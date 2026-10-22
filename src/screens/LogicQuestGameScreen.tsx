@@ -9,7 +9,8 @@ import {
   AppStateStatus,
   BackHandler,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../navigation/types';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -25,6 +26,7 @@ import {
   CpuIcon,
   LayersIcon,
   BrainIcon,
+  ArrowRightIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
@@ -33,10 +35,14 @@ import {
   logicQuestReducer,
   LogicCategory,
 } from '../games/logic-quest';
-import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey } from '../history';
+import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey, GameSessionRecord } from '../history';
+import { workoutRepository } from '../workout';
+
+type LogicQuestRouteProp = RouteProp<RootStackParamList, 'LogicQuestGame'>;
 
 export const LogicQuestGameScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<LogicQuestRouteProp>();
   const { colors, typography } = useTheme();
   const { t, language } = useLocalization();
 
@@ -65,7 +71,7 @@ export const LogicQuestGameScreen: React.FC = () => {
       if (savedSessionIdRef.current !== sessionIdRef.current) {
         savedSessionIdRef.current = sessionIdRef.current;
         const stats = state.sessionStats;
-        historyRepository.saveSession({
+        const sessionRecord: GameSessionRecord = {
           id: sessionIdRef.current,
           schemaVersion: CURRENT_SCHEMA_VERSION,
           gameId: 'logic-quest',
@@ -84,10 +90,21 @@ export const LogicQuestGameScreen: React.FC = () => {
             questionsAnswered: stats.questionsAnswered,
             avgResponseTimeMs: stats.avgResponseTimeMs,
           },
-        });
+        };
+        historyRepository.saveSession(sessionRecord);
+
+        if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
+          workoutRepository
+            .recordDrillCompletion({
+              dateKey: sessionRecord.dateKey,
+              drillIndex: route.params.drillIndex,
+              sessionRecord,
+            })
+            .catch(() => {});
+        }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
 
   // Actions
   const handleOptionPress = (index: number) => {
@@ -562,20 +579,45 @@ export const LogicQuestGameScreen: React.FC = () => {
 
           {/* Action Buttons */}
           <View style={styles.resultActions}>
-            <Button
-              title={t.logicQuest.playAgainCta}
-              onPress={handleRestart}
-              variant="primary"
-              size="lg"
-              icon={<RotateCcwIcon size={18} color="#FFFFFF" />}
-            />
-            <Button
-              title={t.logicQuest.finishCta}
-              onPress={() => navigation.goBack()}
-              variant="secondary"
-              size="md"
-              style={{ marginTop: 12 }}
-            />
+            {route.params?.workoutMode ? (
+              <>
+                <Button
+                  title={
+                    route.params.drillIndex === 2
+                      ? t.dailyWorkout.viewSummaryCta
+                      : t.dailyWorkout.continueWorkoutCta
+                  }
+                  onPress={() => (navigation as any).navigate('DailyWorkout')}
+                  variant="primary"
+                  size="lg"
+                  icon={<ArrowRightIcon size={18} color="#FFFFFF" />}
+                />
+                <Button
+                  title={t.logicQuest.playAgainCta}
+                  onPress={handleRestart}
+                  variant="secondary"
+                  size="md"
+                  style={styles.finishBtn}
+                />
+              </>
+            ) : (
+              <>
+                <Button
+                  title={t.logicQuest.playAgainCta}
+                  onPress={handleRestart}
+                  variant="primary"
+                  size="lg"
+                  icon={<RotateCcwIcon size={18} color="#FFFFFF" />}
+                />
+                <Button
+                  title={t.logicQuest.finishCta}
+                  onPress={() => navigation.goBack()}
+                  variant="secondary"
+                  size="md"
+                  style={styles.finishBtn}
+                />
+              </>
+            )}
           </View>
         </ScreenContainer>
       </Modal>
@@ -742,5 +784,8 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 8,
     marginBottom: 32,
+  },
+  finishBtn: {
+    marginTop: 12,
   },
 });

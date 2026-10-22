@@ -156,4 +156,31 @@ describe('MindRise Localization (EN & ML)', () => {
     const mlPmKeys = Object.keys(ml.patternMaster).sort();
     expect(enPmKeys).toEqual(mlPmKeys);
   });
+
+  it('provides complete Daily Workout translations in English and Malayalam', () => {
+    expect(en.dailyWorkout.screenTitle).toBe('Daily Workout');
+    expect(ml.dailyWorkout.screenTitle).toBe('പ്രതിദിന പരിശീലനം');
+
+    expect(en.dailyWorkout.completeTitle).toBe('Workout Complete!');
+    expect(ml.dailyWorkout.completeTitle).toBe('പരിശീലനം പൂർത്തിയായി!');
+
+    expect(en.dailyWorkout.startWorkoutCta).toBe('Start Daily Workout');
+    expect(ml.dailyWorkout.startWorkoutCta).toBe('പരിശീലനം തുടങ്ങുക');
+
+    expect(en.dailyWorkout.continueWorkoutCta).toBe('Continue Workout');
+    expect(ml.dailyWorkout.continueWorkoutCta).toBe('പരിശീലനം തുടരുക');
+
+    expect(en.dailyWorkout.totalTimeLabel).toBe('Total Time');
+    expect(ml.dailyWorkout.totalTimeLabel).toBe('ആകെ സമയം');
+
+    expect(en.dailyWorkout.averageAccuracyLabel).toBe('Average Accuracy');
+    expect(ml.dailyWorkout.averageAccuracyLabel).toBe('ശരാശരി കൃത്യത');
+
+    expect(en.dailyWorkout.breakdownTitle).toBe('Drill Performance Breakdown');
+    expect(ml.dailyWorkout.breakdownTitle).toBe('വ്യായാമ പ്രകടന വിവരങ്ങൾ');
+
+    const enDwKeys = Object.keys(en.dailyWorkout).sort();
+    const mlDwKeys = Object.keys(ml.dailyWorkout).sort();
+    expect(enDwKeys).toEqual(mlDwKeys);
+  });
 });

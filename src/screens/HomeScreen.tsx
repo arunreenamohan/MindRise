@@ -15,11 +15,15 @@ import {
   GridIcon,
   LayersIcon,
   SparklesIcon,
+  CheckCircleIcon,
+  ArrowRightIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
 import { GameId } from '../games/types';
 import { historyRepository } from '../history';
+import { workoutRepository, DailyWorkoutRecord } from '../workout';
+import { getGameById } from '../games/registry';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
@@ -31,15 +35,19 @@ export const HomeScreen: React.FC = () => {
   const { colors, typography } = useTheme();
   const { t } = useLocalization();
   const [streak, setStreak] = useState<number>(0);
+  const [todayWorkout, setTodayWorkout] = useState<DailyWorkoutRecord | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
-      historyRepository
-        .getHistorySummary()
-        .then((summary) => {
+      Promise.all([
+        historyRepository.getHistorySummary(),
+        workoutRepository.getOrCreateTodayWorkout(),
+      ])
+        .then(([summary, workout]) => {
           if (isMounted) {
             setStreak(summary.currentStreak);
+            setTodayWorkout(workout);
           }
         })
         .catch(() => {
@@ -52,8 +60,7 @@ export const HomeScreen: React.FC = () => {
   );
 
   const handleStartDailyWorkout = () => {
-    // Navigates directly to the flagship drill for Phase 2/start
-    navigation.navigate('GameIntro', { gameId: 'memory-matrix' });
+    navigation.navigate('DailyWorkout');
   };
 
   const handleNavigateTrain = () => {
@@ -64,6 +71,15 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('GameIntro', { gameId });
   };
 
+  const completedDrillsCount = todayWorkout
+    ? todayWorkout.drills.filter((d) => d.status === 'completed').length
+    : 0;
+  const isWorkoutCompleted = todayWorkout?.status === 'completed' || completedDrillsCount === 3;
+  const drillNamesSummary = todayWorkout
+    ? todayWorkout.drills
+        .map((d) => getGameById(d.gameId)?.defaultName ?? d.gameId)
+        .join(' • ')
+    : t.home.dailyWorkoutDesc;
 
   return (
     <ScreenContainer scrollable={true} contentContainerStyle={styles.container}>
@@ -89,23 +105,53 @@ export const HomeScreen: React.FC = () => {
       {/* Daily Workout Hero Card */}
       <Card variant="highlighted" style={styles.workoutCard}>
         <View style={styles.workoutBadgeRow}>
-          <StatBadge label={t.home.dailyWorkoutTag} variant="primary" icon={<SparklesIcon size={12} color={colors.primaryLight} />} />
-          <Text style={[typography.caption, { color: colors.textSecondary }]}>3 DRILLS • 5 MINS</Text>
+          {isWorkoutCompleted ? (
+            <StatBadge
+              label={t.home.dailyWorkoutCompletedTag}
+              variant="success"
+              icon={<CheckCircleIcon size={12} color="#10B981" />}
+            />
+          ) : completedDrillsCount > 0 ? (
+            <StatBadge
+              label={`${completedDrillsCount}/3 ${t.home.dailyWorkoutStepCounter.toUpperCase()}`}
+              variant="primary"
+              icon={<SparklesIcon size={12} color={colors.primaryLight} />}
+            />
+          ) : (
+            <StatBadge
+              label={t.home.dailyWorkoutTag}
+              variant="primary"
+              icon={<SparklesIcon size={12} color={colors.primaryLight} />}
+            />
+          )}
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>3 DRILLS • ~8 MINS</Text>
         </View>
 
         <Text style={[typography.h2, { color: colors.textPrimary, marginTop: 8 }]}>
           {t.home.dailyWorkoutTitle}
         </Text>
         <Text style={[typography.bodyMedium, { color: colors.textSecondary, marginTop: 4, marginBottom: 16 }]}>
-          {t.home.dailyWorkoutDesc}
+          {isWorkoutCompleted ? t.home.dailyWorkoutCompletedDesc : drillNamesSummary}
         </Text>
 
         <Button
-          title={t.home.startWorkoutCta}
+          title={
+            isWorkoutCompleted
+              ? t.home.dailyWorkoutViewSummaryCta
+              : completedDrillsCount > 0
+              ? t.home.dailyWorkoutResumeCta
+              : t.home.startWorkoutCta
+          }
           onPress={handleStartDailyWorkout}
           variant="primary"
           size="md"
-          icon={<ZapIcon size={16} color="#FFFFFF" />}
+          icon={
+            isWorkoutCompleted ? (
+              <ArrowRightIcon size={16} color="#FFFFFF" />
+            ) : (
+              <ZapIcon size={16} color="#FFFFFF" />
+            )
+          }
         />
       </Card>
 

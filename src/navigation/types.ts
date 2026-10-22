@@ -11,12 +11,13 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   Onboarding: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
-  GameIntro: { gameId: GameId };
-  MemoryMatrixGame: undefined;
-  NumberRecallGame: undefined;
-  QuickReactionGame: undefined;
-  LogicQuestGame: undefined;
-  FocusFinderGame: undefined;
-  PatternMasterGame: undefined;
+  DailyWorkout: undefined;
+  GameIntro: { gameId: GameId; workoutMode?: boolean; drillIndex?: number };
+  MemoryMatrixGame: { workoutMode?: boolean; drillIndex?: number } | undefined;
+  NumberRecallGame: { workoutMode?: boolean; drillIndex?: number } | undefined;
+  QuickReactionGame: { workoutMode?: boolean; drillIndex?: number } | undefined;
+  LogicQuestGame: { workoutMode?: boolean; drillIndex?: number } | undefined;
+  FocusFinderGame: { workoutMode?: boolean; drillIndex?: number } | undefined;
+  PatternMasterGame: { workoutMode?: boolean; drillIndex?: number } | undefined;
 };
 
