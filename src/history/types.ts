@@ -36,6 +36,7 @@ export interface GameSessionRecord {
   roundsCompleted: number;
   totalRounds: number;
   highestLevel: number;
+  startingLevel?: number;
   durationMs: number;
   gameSpecificMetrics?: GameSpecificMetrics;
 }

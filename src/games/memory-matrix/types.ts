@@ -71,11 +71,11 @@ export interface GameState {
 }
 
 export type GameAction =
-  | { type: 'START_GAME'; timestamp?: number }
+  | { type: 'START_GAME'; timestamp?: number; initialLevel?: number }
   | { type: 'START_PREVIEW'; targetIndices: number[]; previewDurationMs: number; timestamp?: number }
   | { type: 'START_RECALL'; timestamp?: number }
   | { type: 'TAP_TILE'; tileIndex: number; timestamp?: number }
   | { type: 'END_ROUND_FEEDBACK'; timestamp?: number }
   | { type: 'PAUSE_GAME'; timestamp?: number }
   | { type: 'RESUME_GAME'; timestamp?: number }
-  | { type: 'RESTART_GAME'; timestamp?: number };
+  | { type: 'RESTART_GAME'; timestamp?: number; initialLevel?: number };

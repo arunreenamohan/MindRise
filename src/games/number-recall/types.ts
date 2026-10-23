@@ -63,7 +63,7 @@ export interface NumberRecallGameState {
 }
 
 export type NumberRecallGameAction =
-  | { type: 'START_GAME'; timestamp?: number }
+  | { type: 'START_GAME'; timestamp?: number; initialLevel?: number }
   | { type: 'START_DISPLAY'; targetSequence: string; displayDurationMs: number; timestamp?: number }
   | { type: 'START_RECALL'; timestamp?: number }
   | { type: 'APPEND_DIGIT'; digit: string; timestamp?: number }
@@ -73,4 +73,4 @@ export type NumberRecallGameAction =
   | { type: 'END_ROUND_FEEDBACK'; timestamp?: number }
   | { type: 'PAUSE_GAME'; timestamp?: number }
   | { type: 'RESUME_GAME'; timestamp?: number }
-  | { type: 'RESTART_GAME'; timestamp?: number };
+  | { type: 'RESTART_GAME'; timestamp?: number; initialLevel?: number };

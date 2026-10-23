@@ -340,7 +340,7 @@ export function quickReactionReducer(
     }
 
     case 'RESTART_GAME':
-      return createInitialQuickReactionState(1);
+      return createInitialQuickReactionState(action.initialLevel || 1);
 
     default:
       return state;

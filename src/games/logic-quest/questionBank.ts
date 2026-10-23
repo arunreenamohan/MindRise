@@ -291,23 +291,48 @@ export const QUESTION_BANK: LogicQuestion[] = [
 ];
 
 /**
- * Selects a balanced set of questions ordered by difficulty progression.
+ * Selects a balanced set of questions ordered by difficulty progression,
+ * optionally calibrated by a starting difficulty tier (1: Foundation, 2: Intermediate, 3: Advanced).
  */
-export function getCuratedQuestionsForSession(count = 10): LogicQuestion[] {
+export function getCuratedQuestionsForSession(count = 10, tier = 1): LogicQuestion[] {
   const safeCount = Math.max(3, Math.min(QUESTION_BANK.length, count));
+  const safeTier = Math.max(1, Math.min(3, Math.round(tier) || 1));
 
   // Pick balanced selection across categories
   const sequences = QUESTION_BANK.filter((q) => q.category === 'number-sequence');
   const oddOnes = QUESTION_BANK.filter((q) => q.category === 'odd-one-out');
   const deductives = QUESTION_BANK.filter((q) => q.category === 'deductive-reasoning');
 
+  // Offset selection by tier: Tier 1 starts at 0, Tier 2 at 2, Tier 3 at 3
+  const startOffset = safeTier === 1 ? 0 : safeTier === 2 ? 2 : 3;
+
   const selected: LogicQuestion[] = [];
   const maxRounds = Math.ceil(safeCount / 3);
 
   for (let i = 0; i < maxRounds; i++) {
-    if (sequences[i] && selected.length < safeCount) selected.push(sequences[i]);
-    if (oddOnes[i] && selected.length < safeCount) selected.push(oddOnes[i]);
-    if (deductives[i] && selected.length < safeCount) selected.push(deductives[i]);
+    const seqIdx = (startOffset + i) % sequences.length;
+    const oddIdx = (startOffset + i) % oddOnes.length;
+    const dedIdx = (startOffset + i) % deductives.length;
+
+    if (sequences[seqIdx] && selected.length < safeCount && !selected.some((q) => q.id === sequences[seqIdx].id)) {
+      selected.push(sequences[seqIdx]);
+    }
+    if (oddOnes[oddIdx] && selected.length < safeCount && !selected.some((q) => q.id === oddOnes[oddIdx].id)) {
+      selected.push(oddOnes[oddIdx]);
+    }
+    if (deductives[dedIdx] && selected.length < safeCount && !selected.some((q) => q.id === deductives[dedIdx].id)) {
+      selected.push(deductives[dedIdx]);
+    }
+  }
+
+  // Fallback in case deduplication left any slots unfilled
+  let fallbackIndex = 0;
+  while (selected.length < safeCount && fallbackIndex < QUESTION_BANK.length) {
+    const candidate = QUESTION_BANK[fallbackIndex];
+    if (!selected.some((q) => q.id === candidate.id)) {
+      selected.push(candidate);
+    }
+    fallbackIndex++;
   }
 
   // Sort primarily by difficulty so player experiences gradual progression

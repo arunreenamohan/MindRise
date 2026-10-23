@@ -47,6 +47,8 @@ const getMonotonicTime = (): number => {
   return Date.now();
 };
 
+import { difficultyRepository } from '../difficulty';
+
 type FocusFinderRouteProp = RouteProp<RootStackParamList, 'FocusFinderGame'>;
 
 export const FocusFinderGameScreen: React.FC = () => {
@@ -56,8 +58,13 @@ export const FocusFinderGameScreen: React.FC = () => {
   const { t, language } = useLocalization();
   const { width } = useWindowDimensions();
 
+  const initialLevel = Math.max(
+    1,
+    Math.min(4, Math.round(route.params?.initialLevel ?? 1))
+  );
+
   const [state, dispatch] = useReducer(focusFinderReducer, undefined, () =>
-    createInitialFocusFinderState(1)
+    createInitialFocusFinderState(initialLevel)
   );
 
   const sessionIdRef = useRef<string>(historyRepository.generateSessionId('focus-finder'));
@@ -213,6 +220,7 @@ export const FocusFinderGameScreen: React.FC = () => {
           roundsCompleted: stats.roundsCompleted,
           totalRounds: stats.totalRounds,
           highestLevel: stats.highestLevel,
+          startingLevel: initialLevel,
           durationMs: stats.totalDurationMs,
           gameSpecificMetrics: {
             targetHits: stats.targetHits,
@@ -223,6 +231,7 @@ export const FocusFinderGameScreen: React.FC = () => {
           },
         };
         historyRepository.saveSession(sessionRecord);
+        difficultyRepository.processSessionCompletion(sessionRecord).catch(() => {});
 
         if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
           workoutRepository
@@ -235,7 +244,7 @@ export const FocusFinderGameScreen: React.FC = () => {
         }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex, initialLevel]);
 
   // Actions
   const handleItemPress = (index: number) => {
@@ -255,8 +264,8 @@ export const FocusFinderGameScreen: React.FC = () => {
     sessionIdRef.current = historyRepository.generateSessionId('focus-finder');
     savedSessionIdRef.current = null;
     clearAllTimers();
-    dispatch({ type: 'RESTART_GAME', startTimestamp: Date.now() });
-  }, [clearAllTimers]);
+    dispatch({ type: 'RESTART_GAME', startTimestamp: Date.now(), initialLevel });
+  }, [clearAllTimers, initialLevel]);
 
   const handleQuitConfirm = useCallback(() => {
     setShowExitConfirm(false);

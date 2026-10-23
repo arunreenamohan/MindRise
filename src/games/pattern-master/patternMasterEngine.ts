@@ -80,14 +80,20 @@ export function calculatePatternMasterSessionStats(
 export function createInitialPatternMasterState(
   customQuestions?: PatternQuestion[],
   startTimestamp: number = Date.now(),
-  prng?: () => number
+  prng?: () => number,
+  startingTier: number = 1
 ): PatternMasterState {
   let questions: PatternQuestion[];
 
   if (customQuestions && validateQuestionBank(customQuestions)) {
     questions = customQuestions;
   } else {
-    questions = selectSessionQuestions(PATTERN_QUESTION_BANK, TOTAL_PATTERN_MASTER_QUESTIONS, prng);
+    questions = selectSessionQuestions(
+      PATTERN_QUESTION_BANK,
+      TOTAL_PATTERN_MASTER_QUESTIONS,
+      prng,
+      startingTier
+    );
   }
 
   const initialDifficulty = questions.length > 0 ? questions[0].difficulty : 1;
@@ -236,7 +242,9 @@ export function patternMasterReducer(
     case 'RESTART_GAME': {
       return createInitialPatternMasterState(
         action.questions,
-        action.startTimestamp || Date.now()
+        action.startTimestamp || Date.now(),
+        undefined,
+        action.startingTier || 1
       );
     }
 

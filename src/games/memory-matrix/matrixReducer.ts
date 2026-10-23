@@ -52,9 +52,10 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_GAME': {
       const now = action.timestamp ?? Date.now();
-      const levelConfig = getLevelConfig(DEFAULT_INITIAL_LEVEL);
+      const initLevel = typeof action.initialLevel === 'number' ? action.initialLevel : state.currentLevel;
+      const levelConfig = getLevelConfig(initLevel);
       return {
-        ...createInitialGameState(DEFAULT_INITIAL_LEVEL),
+        ...createInitialGameState(initLevel),
         phase: 'preview',
         gridSize: levelConfig.gridSize,
         previewDurationMs: levelConfig.previewDurationMs,
@@ -304,7 +305,8 @@ export function matrixReducer(state: GameState, action: GameAction): GameState {
 
     case 'RESTART_GAME': {
       const now = action.timestamp ?? Date.now();
-      const initial = createInitialGameState(DEFAULT_INITIAL_LEVEL);
+      const initLevel = typeof action.initialLevel === 'number' ? action.initialLevel : DEFAULT_INITIAL_LEVEL;
+      const initial = createInitialGameState(initLevel);
       return {
         ...initial,
         phase: 'countdown',

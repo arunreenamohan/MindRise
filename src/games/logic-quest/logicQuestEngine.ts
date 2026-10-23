@@ -95,12 +95,14 @@ export function calculateLogicQuestSessionStats(
 }
 
 export function createInitialLogicQuestState(
-  customQuestions?: LogicQuestion[]
+  customQuestions?: LogicQuestion[],
+  startingTier: number = 1
 ): LogicQuestState {
+  const boundedTier = Math.max(1, Math.min(3, Math.round(startingTier) || 1));
   const questions =
     customQuestions && customQuestions.length > 0
       ? customQuestions
-      : getCuratedQuestionsForSession(DEFAULT_TOTAL_QUESTIONS);
+      : getCuratedQuestionsForSession(DEFAULT_TOTAL_QUESTIONS, boundedTier);
 
   const initialDiff = questions[0]?.difficulty || 1;
 
@@ -239,7 +241,7 @@ export function logicQuestReducer(
     }
 
     case 'RESTART_GAME':
-      return createInitialLogicQuestState(action.questions);
+      return createInitialLogicQuestState(action.questions, action.startingTier || 1);
 
     default:
       return state;

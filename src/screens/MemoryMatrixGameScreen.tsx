@@ -42,6 +42,8 @@ import {
 import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey, GameSessionRecord } from '../history';
 import { workoutRepository } from '../workout';
 
+import { difficultyRepository } from '../difficulty';
+
 type MemoryMatrixRouteProp = RouteProp<RootStackParamList, 'MemoryMatrixGame'>;
 
 export const MemoryMatrixGameScreen: React.FC = () => {
@@ -51,8 +53,13 @@ export const MemoryMatrixGameScreen: React.FC = () => {
   const { t } = useLocalization();
   const { width } = useWindowDimensions();
 
+  const initialLevel = Math.max(
+    1,
+    Math.min(8, Math.round(route.params?.initialLevel ?? 1))
+  );
+
   const [state, dispatch] = useReducer(matrixReducer, undefined, () =>
-    createInitialGameState(1)
+    createInitialGameState(initialLevel)
   );
 
   const sessionIdRef = useRef<string>(historyRepository.generateSessionId('memory-matrix'));
@@ -179,12 +186,14 @@ export const MemoryMatrixGameScreen: React.FC = () => {
           roundsCompleted: stats.roundsCompleted,
           totalRounds: stats.totalRounds,
           highestLevel: stats.highestLevel,
+          startingLevel: initialLevel,
           durationMs: stats.totalDurationMs,
           gameSpecificMetrics: {
             perfectRounds: stats.perfectRounds,
           },
         };
         historyRepository.saveSession(sessionRecord);
+        difficultyRepository.processSessionCompletion(sessionRecord).catch(() => {});
 
         if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
           workoutRepository
@@ -197,7 +206,7 @@ export const MemoryMatrixGameScreen: React.FC = () => {
         }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex, initialLevel]);
 
   // Unmount Cleanup
   useEffect(() => {
@@ -227,8 +236,8 @@ export const MemoryMatrixGameScreen: React.FC = () => {
     setCountdown(3);
     sessionIdRef.current = historyRepository.generateSessionId('memory-matrix');
     savedSessionIdRef.current = null;
-    dispatch({ type: 'RESTART_GAME' });
-  }, [clearTimers]);
+    dispatch({ type: 'RESTART_GAME', initialLevel });
+  }, [clearTimers, initialLevel]);
 
   const handleQuitConfirm = useCallback(() => {
     clearTimers();

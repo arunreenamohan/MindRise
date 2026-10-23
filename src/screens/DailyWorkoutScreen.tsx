@@ -37,6 +37,11 @@ import {
 } from '../workout';
 import { getGameById } from '../games/registry';
 import { GameId } from '../games/types';
+import {
+  difficultyRepository,
+  GameDifficultyProfile,
+  STARTING_DIFFICULTY_BOUNDS,
+} from '../difficulty';
 
 type DailyWorkoutScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -47,18 +52,21 @@ export const DailyWorkoutScreen: React.FC = () => {
 
   const [workout, setWorkout] = useState<DailyWorkoutRecord | null>(null);
   const [streak, setStreak] = useState<WorkoutStreakResult>({ currentStreak: 0, bestStreak: 0 });
+  const [difficultyProfiles, setDifficultyProfiles] = useState<Record<GameId, GameDifficultyProfile> | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
 
   const loadWorkoutData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [currentWorkout, workoutStreak] = await Promise.all([
+      const [currentWorkout, workoutStreak, diffProfiles] = await Promise.all([
         workoutRepository.getOrCreateTodayWorkout(),
         workoutRepository.getWorkoutStreak(),
+        difficultyRepository.getAllProfiles(),
       ]);
       setWorkout(currentWorkout);
       setStreak(workoutStreak);
+      setDifficultyProfiles(diffProfiles);
     } catch {
       // Graceful fallback to existing state
     } finally {
@@ -448,6 +456,13 @@ export const DailyWorkoutScreen: React.FC = () => {
         const isCompleted = drill.status === 'completed';
         const isNext = index === currentDrillIndex;
         const accent = getDrillAccentColor(drill);
+        const profile = difficultyProfiles?.[drill.gameId];
+        const bounds = STARTING_DIFFICULTY_BOUNDS[drill.gameId];
+        const isTier = bounds?.isTierBased ?? false;
+        const levelVal = profile?.startingLevel ?? bounds?.defaultStartingLevel ?? 1;
+        const levelLabel = isTier
+          ? `${t.dailyWorkout.tierBadge.toUpperCase()} ${levelVal}`
+          : `${t.dailyWorkout.levelBadge.toUpperCase()} ${levelVal}`;
 
         return (
           <Card
@@ -473,6 +488,7 @@ export const DailyWorkoutScreen: React.FC = () => {
                     size="sm"
                   />
                   <StatBadge label={drill.categoryLabel.toUpperCase()} variant="neutral" size="sm" />
+                  <StatBadge label={levelLabel} variant="neutral" size="sm" />
                 </View>
 
                 <Text style={[typography.h3, styles.drillTitle, { color: colors.textPrimary }]}>

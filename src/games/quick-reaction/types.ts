@@ -68,4 +68,4 @@ export type QuickReactionAction =
   | { type: 'END_ROUND_FEEDBACK' }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
-  | { type: 'RESTART_GAME' };
+  | { type: 'RESTART_GAME'; initialLevel?: number };

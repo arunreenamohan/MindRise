@@ -114,4 +114,4 @@ export type FocusFinderAction =
   | { type: 'NEXT_ROUND'; nextStartTime: number; prng?: () => number }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
-  | { type: 'RESTART_GAME'; startTimestamp?: number; prng?: () => number };
+  | { type: 'RESTART_GAME'; startTimestamp?: number; prng?: () => number; initialLevel?: number };

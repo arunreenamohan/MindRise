@@ -63,4 +63,4 @@ export type LogicQuestAction =
   | { type: 'NEXT_QUESTION'; nextTimestamp: number }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
-  | { type: 'RESTART_GAME'; questions?: LogicQuestion[] };
+  | { type: 'RESTART_GAME'; questions?: LogicQuestion[]; startingTier?: number };

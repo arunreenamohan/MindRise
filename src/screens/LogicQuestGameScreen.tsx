@@ -38,6 +38,8 @@ import {
 import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey, GameSessionRecord } from '../history';
 import { workoutRepository } from '../workout';
 
+import { difficultyRepository } from '../difficulty';
+
 type LogicQuestRouteProp = RouteProp<RootStackParamList, 'LogicQuestGame'>;
 
 export const LogicQuestGameScreen: React.FC = () => {
@@ -46,8 +48,13 @@ export const LogicQuestGameScreen: React.FC = () => {
   const { colors, typography } = useTheme();
   const { t, language } = useLocalization();
 
+  const initialTier = Math.max(
+    1,
+    Math.min(3, Math.round(route.params?.initialLevel ?? 1))
+  );
+
   const [state, dispatch] = useReducer(logicQuestReducer, undefined, () =>
-    createInitialLogicQuestState()
+    createInitialLogicQuestState(undefined, initialTier)
   );
 
   const sessionIdRef = useRef<string>(historyRepository.generateSessionId('logic-quest'));
@@ -84,6 +91,7 @@ export const LogicQuestGameScreen: React.FC = () => {
           roundsCompleted: stats.questionsAnswered,
           totalRounds: stats.totalQuestions,
           highestLevel: stats.highestDifficulty,
+          startingLevel: initialTier,
           durationMs: stats.totalDurationMs,
           gameSpecificMetrics: {
             correctAnswers: stats.correctCount,
@@ -92,6 +100,7 @@ export const LogicQuestGameScreen: React.FC = () => {
           },
         };
         historyRepository.saveSession(sessionRecord);
+        difficultyRepository.processSessionCompletion(sessionRecord).catch(() => {});
 
         if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
           workoutRepository
@@ -104,7 +113,7 @@ export const LogicQuestGameScreen: React.FC = () => {
         }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex, initialTier]);
 
   // Actions
   const handleOptionPress = (index: number) => {
@@ -133,8 +142,8 @@ export const LogicQuestGameScreen: React.FC = () => {
   const handleRestart = useCallback(() => {
     sessionIdRef.current = historyRepository.generateSessionId('logic-quest');
     savedSessionIdRef.current = null;
-    dispatch({ type: 'RESTART_GAME' });
-  }, []);
+    dispatch({ type: 'RESTART_GAME', startingTier: initialTier });
+  }, [initialTier]);
 
   const handleQuitConfirm = useCallback(() => {
     setShowExitConfirm(false);

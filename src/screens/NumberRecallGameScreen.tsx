@@ -40,6 +40,8 @@ import {
 import { historyRepository, CURRENT_SCHEMA_VERSION, getLocalDateKey, GameSessionRecord } from '../history';
 import { workoutRepository } from '../workout';
 
+import { difficultyRepository } from '../difficulty';
+
 type NumberRecallRouteProp = RouteProp<RootStackParamList, 'NumberRecallGame'>;
 
 export const NumberRecallGameScreen: React.FC = () => {
@@ -49,8 +51,13 @@ export const NumberRecallGameScreen: React.FC = () => {
   const { t } = useLocalization();
   const { width } = useWindowDimensions();
 
+  const initialLevel = Math.max(
+    1,
+    Math.min(7, Math.round(route.params?.initialLevel ?? 1))
+  );
+
   const [state, dispatch] = useReducer(numberRecallReducer, undefined, () =>
-    createInitialNumberRecallState(1)
+    createInitialNumberRecallState(initialLevel)
   );
 
   const sessionIdRef = useRef<string>(historyRepository.generateSessionId('number-recall'));
@@ -168,6 +175,7 @@ export const NumberRecallGameScreen: React.FC = () => {
           roundsCompleted: stats.roundsCompleted,
           totalRounds: stats.totalRounds,
           highestLevel: stats.highestLevel,
+          startingLevel: initialLevel,
           durationMs: stats.totalDurationMs,
           gameSpecificMetrics: {
             maxDigitSpan: stats.maxDigitSpan,
@@ -175,6 +183,7 @@ export const NumberRecallGameScreen: React.FC = () => {
           },
         };
         historyRepository.saveSession(sessionRecord);
+        difficultyRepository.processSessionCompletion(sessionRecord).catch(() => {});
 
         if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
           workoutRepository
@@ -187,7 +196,7 @@ export const NumberRecallGameScreen: React.FC = () => {
         }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex, initialLevel]);
 
   // Unmount Cleanup
   useEffect(() => {
@@ -233,8 +242,8 @@ export const NumberRecallGameScreen: React.FC = () => {
     setCountdown(3);
     sessionIdRef.current = historyRepository.generateSessionId('number-recall');
     savedSessionIdRef.current = null;
-    dispatch({ type: 'RESTART_GAME' });
-  }, [clearTimers]);
+    dispatch({ type: 'RESTART_GAME', initialLevel });
+  }, [clearTimers, initialLevel]);
 
   const handleQuitConfirm = useCallback(() => {
     clearTimers();

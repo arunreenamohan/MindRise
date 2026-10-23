@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
@@ -22,6 +22,11 @@ import {
 import { getGameById } from '../games/registry';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
+import {
+  difficultyRepository,
+  GameDifficultyProfile,
+  STARTING_DIFFICULTY_BOUNDS,
+} from '../difficulty';
 
 type GameIntroRouteProp = RouteProp<RootStackParamList, 'GameIntro'>;
 
@@ -32,6 +37,8 @@ export const GameIntroScreen: React.FC = () => {
   const { t } = useLocalization();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [difficultyProfile, setDifficultyProfile] = useState<GameDifficultyProfile | null>(null);
 
   const gameId = route.params?.gameId;
   const game = (gameId ? getGameById(gameId) : undefined) || getGameById('memory-matrix')!;
@@ -43,6 +50,31 @@ export const GameIntroScreen: React.FC = () => {
     game.id === 'focus-finder' ||
     game.id === 'pattern-master';
   const accentColor = colors[game.accentColorKey] || colors.primary;
+
+  const isTierBased = STARTING_DIFFICULTY_BOUNDS[game.id]?.isTierBased ?? false;
+  const currentLevel = difficultyProfile?.startingLevel ?? STARTING_DIFFICULTY_BOUNDS[game.id]?.defaultStartingLevel ?? 1;
+
+  useEffect(() => {
+    let isMounted = true;
+    difficultyRepository.getStartingDifficulty(game.id).then((p) => {
+      if (isMounted) {
+        setDifficultyProfile(p);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [game.id]);
+
+  const handleConfirmReset = async () => {
+    setShowResetModal(false);
+    try {
+      const reset = await difficultyRepository.resetDifficulty(game.id);
+      setDifficultyProfile(reset);
+    } catch {
+      // Graceful fallback
+    }
+  };
 
   const getGameIcon = (id: string, color: string) => {
     switch (id) {
@@ -74,14 +106,16 @@ export const GameIntroScreen: React.FC = () => {
 
     const targetScreen = screenMap[game.id];
     if (targetScreen) {
-      const workoutParams = route.params?.workoutMode
-        ? { workoutMode: true, drillIndex: route.params.drillIndex }
-        : undefined;
+      const targetParams = {
+        workoutMode: route.params?.workoutMode,
+        drillIndex: route.params?.drillIndex,
+        initialLevel: currentLevel,
+      };
 
       if (route.params?.workoutMode && typeof (navigation as any).replace === 'function') {
-        (navigation as any).replace(targetScreen, workoutParams);
+        (navigation as any).replace(targetScreen, targetParams);
       } else {
-        (navigation as any).navigate(targetScreen, workoutParams);
+        (navigation as any).navigate(targetScreen, targetParams);
       }
     } else {
       setModalVisible(true);
@@ -151,13 +185,30 @@ export const GameIntroScreen: React.FC = () => {
           <View style={styles.specItem}>
             <ZapIcon size={20} color={colors.warning} />
             <Text style={[typography.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              {t.gameIntro.difficultyLabel}
+              {isTierBased ? t.gameIntro.startingTierLabel : t.gameIntro.startingLevelLabel}
             </Text>
             <Text style={[typography.h3, { color: colors.textPrimary, marginTop: 2 }]}>
-              Adaptive
+              {isTierBased ? `${t.dailyWorkout.tierBadge} ${currentLevel}` : `${t.dailyWorkout.levelBadge} ${currentLevel}`}
             </Text>
           </View>
         </View>
+      </Card>
+
+      {/* Adaptive Progression Context & Reset Option */}
+      <Card variant="outlined" style={styles.adaptiveCard}>
+        <View style={styles.adaptiveRow}>
+          <BrainIcon size={20} color={colors.primaryLight} />
+          <Text style={[typography.bodySmall, styles.adaptiveText, { color: colors.textSecondary }]}>
+            {t.gameIntro.adaptiveNote}
+          </Text>
+        </View>
+        <Button
+          title={t.gameIntro.resetDifficultyCta}
+          onPress={() => setShowResetModal(true)}
+          variant="ghost"
+          size="sm"
+          style={styles.resetDifficultyBtn}
+        />
       </Card>
 
       {/* Step by Step Instructions */}
@@ -270,6 +321,45 @@ export const GameIntroScreen: React.FC = () => {
           </Card>
         </View>
       </Modal>
+
+      {/* Reset Starting Level Modal */}
+      <Modal
+        visible={showResetModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowResetModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Card variant="elevated" style={styles.modalContent}>
+            <View style={[styles.modalIconCircle, { backgroundColor: `${colors.attention}22` }]}>
+              <ZapIcon size={38} color={colors.attention} />
+            </View>
+
+            <Text style={[typography.h2, styles.modalTitle, { color: colors.textPrimary }]}>
+              {t.gameIntro.resetDifficultyTitle}
+            </Text>
+
+            <Text style={[typography.bodyMedium, styles.modalBody, { color: colors.textSecondary }]}>
+              {t.gameIntro.resetDifficultyMessage}
+            </Text>
+
+            <Button
+              title={t.gameIntro.resetDifficultyConfirm}
+              onPress={handleConfirmReset}
+              variant="primary"
+              size="md"
+              style={styles.modalActionBtn}
+            />
+            <Button
+              title={t.common.cancel}
+              onPress={() => setShowResetModal(false)}
+              variant="secondary"
+              size="md"
+              style={styles.modalActionBtn}
+            />
+          </Card>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 };
@@ -317,6 +407,23 @@ const styles = StyleSheet.create({
   specBorder: {
     borderLeftWidth: 1,
     borderRightWidth: 1,
+  },
+  adaptiveCard: {
+    marginTop: 14,
+    padding: 14,
+  },
+  adaptiveRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  adaptiveText: {
+    marginLeft: 10,
+    flex: 1,
+    lineHeight: 18,
+  },
+  resetDifficultyBtn: {
+    marginTop: 8,
+    alignSelf: 'flex-end',
   },
   instructionCard: {
     padding: 18,
@@ -397,6 +504,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginVertical: 14,
+  },
+  modalActionBtn: {
+    width: '100%',
+    marginTop: 8,
   },
   modalCloseBtn: {
     width: '100%',

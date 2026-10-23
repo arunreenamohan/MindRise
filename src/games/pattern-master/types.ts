@@ -70,4 +70,4 @@ export type PatternMasterAction =
   | { type: 'NEXT_QUESTION'; nextTimestamp: number }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
-  | { type: 'RESTART_GAME'; questions?: PatternQuestion[]; startTimestamp?: number };
+  | { type: 'RESTART_GAME'; questions?: PatternQuestion[]; startTimestamp?: number; startingTier?: number };

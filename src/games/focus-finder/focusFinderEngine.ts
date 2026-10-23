@@ -504,7 +504,7 @@ export function focusFinderReducer(
     }
 
     case 'RESTART_GAME': {
-      return createInitialFocusFinderState(1, action.startTimestamp || Date.now(), action.prng);
+      return createInitialFocusFinderState(action.initialLevel || 1, action.startTimestamp || Date.now(), action.prng);
     }
 
     default:

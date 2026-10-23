@@ -461,26 +461,43 @@ export function validateQuestionBank(questions: PatternQuestion[], throwOnError:
 /**
  * Selects a balanced set of questions for a training session,
  * covering visual patterns, sequences, and missing-tile puzzles across difficulties 1 to 6.
+ * Optionally filters by starting tier (1: Foundation, 2: Intermediate, 3: Mastery).
  */
 export function selectSessionQuestions(
   bank: PatternQuestion[] = PATTERN_QUESTION_BANK,
   count: number = 10,
-  prng: () => number = Math.random
+  prng: () => number = Math.random,
+  tier?: number
 ): PatternQuestion[] {
   if (!validateQuestionBank(bank)) {
     return [];
   }
 
-  if (count >= bank.length) {
-    const copy = [...bank];
+  let pool = bank;
+  if (typeof tier === 'number' && Number.isFinite(tier)) {
+    const safeTier = Math.max(1, Math.min(3, Math.round(tier)));
+    if (safeTier === 1) {
+      const filtered = bank.filter((q) => q.difficulty <= 3);
+      if (filtered.length >= count) pool = filtered;
+    } else if (safeTier === 2) {
+      const filtered = bank.filter((q) => q.difficulty >= 2 && q.difficulty <= 5);
+      if (filtered.length >= count) pool = filtered;
+    } else if (safeTier === 3) {
+      const filtered = bank.filter((q) => q.difficulty >= 3);
+      if (filtered.length >= count) pool = filtered;
+    }
+  }
+
+  if (count >= pool.length) {
+    const copy = [...pool];
     copy.sort((a, b) => a.difficulty - b.difficulty);
     return copy;
   }
 
   // Group by category
-  const visual = bank.filter((q) => q.category === 'visual-pattern');
-  const numeric = bank.filter((q) => q.category === 'number-sequence');
-  const tiles = bank.filter((q) => q.category === 'missing-tile');
+  const visual = pool.filter((q) => q.category === 'visual-pattern');
+  const numeric = pool.filter((q) => q.category === 'number-sequence');
+  const tiles = pool.filter((q) => q.category === 'missing-tile');
 
   // Deterministically sort/shuffle within groups using PRNG
   const shuffle = <T>(arr: T[]): T[] => {
@@ -502,6 +519,16 @@ export function selectSessionQuestions(
     ...sNumeric.slice(0, Math.ceil(count * 0.4)),
     ...sTiles.slice(0, Math.ceil(count * 0.3)),
   ];
+
+  // Fill any remaining slots from the pool if category slicing fell short
+  let fillIdx = 0;
+  while (selected.length < count && fillIdx < pool.length) {
+    const cand = pool[fillIdx];
+    if (!selected.some((q) => q.id === cand.id)) {
+      selected.push(cand);
+    }
+    fillIdx++;
+  }
 
   // Sort ascending by difficulty for a gentle, rewarding learning curve
   selected.sort((a, b) => a.difficulty - b.difficulty);

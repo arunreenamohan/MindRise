@@ -76,6 +76,16 @@ export interface Translations {
     durationLabel: string;
     roundsLabel: string;
     difficultyLabel: string;
+    startingLevelLabel: string;
+    startingTierLabel: string;
+    adaptiveNote: string;
+    tierFoundation: string;
+    tierIntermediate: string;
+    tierAdvanced: string;
+    resetDifficultyCta: string;
+    resetDifficultyTitle: string;
+    resetDifficultyMessage: string;
+    resetDifficultyConfirm: string;
     statusNoticeTitle: string;
     notPlayableYet: string;
     phase2ReadyNote: string;
@@ -421,6 +431,8 @@ export interface Translations {
     resetConfirmMessage: string;
     drillScoreLabel: string;
     drillAccuracyLabel: string;
+    levelBadge: string;
+    tierBadge: string;
     upNextBadge: string;
     readyBadge: string;
     nextDrillAction: string;

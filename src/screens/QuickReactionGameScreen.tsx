@@ -44,6 +44,8 @@ const getMonotonicTime = (): number => {
   return Date.now();
 };
 
+import { difficultyRepository } from '../difficulty';
+
 type QuickReactionRouteProp = RouteProp<RootStackParamList, 'QuickReactionGame'>;
 
 export const QuickReactionGameScreen: React.FC = () => {
@@ -53,8 +55,13 @@ export const QuickReactionGameScreen: React.FC = () => {
   const { t } = useLocalization();
   const { width } = useWindowDimensions();
 
+  const initialLevel = Math.max(
+    1,
+    Math.min(4, Math.round(route.params?.initialLevel ?? 1))
+  );
+
   const [state, dispatch] = useReducer(quickReactionReducer, undefined, () =>
-    createInitialQuickReactionState(1)
+    createInitialQuickReactionState(initialLevel)
   );
 
   const sessionIdRef = useRef<string>(historyRepository.generateSessionId('quick-reaction'));
@@ -218,6 +225,7 @@ export const QuickReactionGameScreen: React.FC = () => {
           roundsCompleted: stats.roundsCompleted,
           totalRounds: stats.totalRounds,
           highestLevel: stats.highestLevel,
+          startingLevel: initialLevel,
           durationMs: stats.totalDurationMs,
           gameSpecificMetrics: {
             bestReactionMs: stats.bestReactionMs,
@@ -229,6 +237,7 @@ export const QuickReactionGameScreen: React.FC = () => {
           },
         };
         historyRepository.saveSession(sessionRecord);
+        difficultyRepository.processSessionCompletion(sessionRecord).catch(() => {});
 
         if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
           workoutRepository
@@ -241,7 +250,7 @@ export const QuickReactionGameScreen: React.FC = () => {
         }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex, initialLevel]);
 
   // Clean up all timers on unmount
   useEffect(() => {
@@ -275,8 +284,8 @@ export const QuickReactionGameScreen: React.FC = () => {
     setCountdown(3);
     sessionIdRef.current = historyRepository.generateSessionId('quick-reaction');
     savedSessionIdRef.current = null;
-    dispatch({ type: 'RESTART_GAME' });
-  }, [clearAllTimers]);
+    dispatch({ type: 'RESTART_GAME', initialLevel });
+  }, [clearAllTimers, initialLevel]);
 
   const handleQuitConfirm = useCallback(() => {
     clearAllTimers();

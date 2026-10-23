@@ -46,6 +46,8 @@ const getMonotonicTime = (): number => {
   return Date.now();
 };
 
+import { difficultyRepository } from '../difficulty';
+
 type PatternMasterRouteProp = RouteProp<RootStackParamList, 'PatternMasterGame'>;
 
 export const PatternMasterGameScreen: React.FC = () => {
@@ -54,8 +56,13 @@ export const PatternMasterGameScreen: React.FC = () => {
   const { colors, typography } = useTheme();
   const { t, language } = useLocalization();
 
+  const initialTier = Math.max(
+    1,
+    Math.min(3, Math.round(route.params?.initialLevel ?? 1))
+  );
+
   const [state, dispatch] = useReducer(patternMasterReducer, undefined, () =>
-    createInitialPatternMasterState()
+    createInitialPatternMasterState(undefined, Date.now(), Math.random, initialTier)
   );
 
   const sessionIdRef = useRef<string>(historyRepository.generateSessionId('pattern-master'));
@@ -107,6 +114,7 @@ export const PatternMasterGameScreen: React.FC = () => {
           roundsCompleted: stats.questionsAnswered,
           totalRounds: stats.totalQuestions,
           highestLevel: stats.highestDifficulty,
+          startingLevel: initialTier,
           durationMs: stats.totalDurationMs,
           gameSpecificMetrics: {
             correctAnswers: stats.correctCount,
@@ -115,6 +123,7 @@ export const PatternMasterGameScreen: React.FC = () => {
           },
         };
         historyRepository.saveSession(sessionRecord);
+        difficultyRepository.processSessionCompletion(sessionRecord).catch(() => {});
 
         if (route.params?.workoutMode && typeof route.params.drillIndex === 'number') {
           workoutRepository
@@ -127,7 +136,7 @@ export const PatternMasterGameScreen: React.FC = () => {
         }
       }
     }
-  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex]);
+  }, [state.phase, state.sessionStats, state.sessionStartTime, route.params?.workoutMode, route.params?.drillIndex, initialTier]);
 
   // Actions
   const handleOptionPress = (index: number) => {
@@ -156,8 +165,8 @@ export const PatternMasterGameScreen: React.FC = () => {
   const handleRestart = useCallback(() => {
     sessionIdRef.current = historyRepository.generateSessionId('pattern-master');
     savedSessionIdRef.current = null;
-    dispatch({ type: 'RESTART_GAME', startTimestamp: Date.now() });
-  }, []);
+    dispatch({ type: 'RESTART_GAME', startTimestamp: Date.now(), startingTier: initialTier });
+  }, [initialTier]);
 
   const handleQuitConfirm = useCallback(() => {
     setShowExitConfirm(false);

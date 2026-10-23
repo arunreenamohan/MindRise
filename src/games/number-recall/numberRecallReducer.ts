@@ -63,9 +63,10 @@ export function numberRecallReducer(
   switch (action.type) {
     case 'START_GAME': {
       const now = action.timestamp ?? Date.now();
-      const levelConfig = getNumberRecallLevelConfig(DEFAULT_INITIAL_LEVEL);
+      const initLevel = typeof action.initialLevel === 'number' ? action.initialLevel : state.currentLevel;
+      const levelConfig = getNumberRecallLevelConfig(initLevel);
       return {
-        ...createInitialNumberRecallState(DEFAULT_INITIAL_LEVEL),
+        ...createInitialNumberRecallState(initLevel),
         phase: 'display',
         displayDurationMs: levelConfig.displayDurationMs,
         sessionStartTime: now,
@@ -292,7 +293,8 @@ export function numberRecallReducer(
 
     case 'RESTART_GAME': {
       const now = action.timestamp ?? Date.now();
-      const initial = createInitialNumberRecallState(DEFAULT_INITIAL_LEVEL);
+      const initLevel = typeof action.initialLevel === 'number' ? action.initialLevel : DEFAULT_INITIAL_LEVEL;
+      const initial = createInitialNumberRecallState(initLevel);
       return {
         ...initial,
         phase: 'countdown',

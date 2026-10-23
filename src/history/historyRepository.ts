@@ -72,6 +72,10 @@ class HistoryRepository {
       : 0;
     const totalRounds = Number.isFinite(item.totalRounds) ? Math.max(1, item.totalRounds!) : 10;
     const highestLevel = Number.isFinite(item.highestLevel) ? Math.max(1, item.highestLevel!) : 1;
+    const startingLevel =
+      typeof item.startingLevel === 'number' && Number.isFinite(item.startingLevel) && item.startingLevel >= 1
+        ? Math.round(item.startingLevel)
+        : undefined;
     const durationMs = Number.isFinite(item.durationMs) ? Math.max(0, item.durationMs!) : 0;
 
     const completedAt =
@@ -107,6 +111,7 @@ class HistoryRepository {
       roundsCompleted,
       totalRounds,
       highestLevel,
+      ...(startingLevel !== undefined ? { startingLevel } : {}),
       durationMs,
       gameSpecificMetrics: item.gameSpecificMetrics ?? {},
     };
