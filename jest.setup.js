@@ -92,3 +92,21 @@ jest.mock('@react-native-async-storage/async-storage', () => {
     ...mockStorage,
   };
 });
+
+jest.mock('react-native-iap', () => {
+  return {
+    __esModule: true,
+    initConnection: jest.fn(async () => true),
+    endConnection: jest.fn(async () => {}),
+    fetchProducts: jest.fn(async () => []),
+    getAvailablePurchases: jest.fn(async () => []),
+    requestPurchase: jest.fn(async () => ({})),
+    finishTransaction: jest.fn(async () => ({})),
+    acknowledgePurchaseAndroid: jest.fn(async () => true),
+    purchaseUpdatedListener: jest.fn(() => ({ remove: jest.fn() })),
+    purchaseErrorListener: jest.fn(() => ({ remove: jest.fn() })),
+    subscriptionBillingIssueListener: jest.fn(() => ({ remove: jest.fn() })),
+    isNitroReady: jest.fn(() => true),
+  };
+});
+
