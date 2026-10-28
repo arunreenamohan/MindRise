@@ -92,6 +92,13 @@ export interface Translations {
     startDrill: string;
     modalTitle: string;
     modalMessage: string;
+    proRequiredBadge: string;
+    levelGatedNotice: string;
+    tierGatedNotice: string;
+    unlockProLevelCta: string;
+    unlockProTierCta: string;
+    resetToFreeLevel: string;
+    resetToFreeTier: string;
   };
   progress: {
     screenTitle: string;
@@ -148,6 +155,14 @@ export interface Translations {
     bestSearchLabel: string;
     allDrillsActiveTitle: string;
     allDrillsActiveSubtitle: string;
+    scope7D: string;
+    scope30D: string;
+    scope90D: string;
+    scopeAll: string;
+    lockedScopeTitle: string;
+    lockedScopeSubtitle: string;
+    unlockTrendsCta: string;
+    proFeatureBadge: string;
   };
   profile: {
     screenTitle: string;
@@ -439,6 +454,10 @@ export interface Translations {
     continueToNextDrill: string;
     interruptedNotice: string;
     disclaimerText: string;
+    limitReachedBadge: string;
+    dailyLimitNotice: string;
+    upgradeUnlimitedWorkoutsCta: string;
+    replayProNotice: string;
   };
   paywall: {
     title: string;

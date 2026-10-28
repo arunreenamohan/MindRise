@@ -440,6 +440,13 @@ export class EntitlementService {
   }
 
   /**
+   * Synchronous check whether user currently has active Pro entitlement.
+   */
+  public isProSync(): boolean {
+    return this.entitlementState.isPro;
+  }
+
+  /**
    * Fetches product metadata and localized prices from the store for all MindRise SKUs.
    */
   public async getAvailablePlans(): Promise<PurchasePlan[]> {
@@ -616,6 +623,14 @@ export class EntitlementService {
     await AsyncStorage.removeItem(IAP_STORAGE_KEYS.PRO_ENTITLED);
     await AsyncStorage.removeItem(IAP_STORAGE_KEYS.RECEIPT_CACHE);
     this.notifyListeners();
+  }
+
+  /**
+   * Sets active entitlement state directly for unit or integration testing.
+   */
+  public async setEntitlementForTesting(sku: ProductSku = MINDRISE_SKUS.LIFETIME): Promise<void> {
+    const proState = buildProEntitlementState(sku, 'local_cache');
+    await this.persistEntitlementState(proState);
   }
 
   /**

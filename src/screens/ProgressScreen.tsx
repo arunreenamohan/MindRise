@@ -23,9 +23,11 @@ import {
   ZapIcon,
   CpuIcon,
   CheckCircleIcon,
+  CrownIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
+import { entitlementService } from '../services/EntitlementService';
 import {
   historyRepository,
   GameSessionRecord,
@@ -38,15 +40,32 @@ type ProgressScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
+export type AnalyticsScope = '7D' | '30D' | '90D' | 'ALL';
+
 export const ProgressScreen: React.FC = () => {
   const navigation = useNavigation<ProgressScreenNavigationProp>();
   const { colors, typography } = useTheme();
   const { t } = useLocalization();
 
+  const [selectedScope, setSelectedScope] = useState<AnalyticsScope>('7D');
+  const [isPro, setIsPro] = useState<boolean>(entitlementService.isProSync());
   const [sessions, setSessions] = useState<GameSessionRecord[]>([]);
   const [workouts, setWorkouts] = useState<DailyWorkoutRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = entitlementService.subscribe((state) => {
+      if (isMounted) {
+        setIsPro(state.isPro);
+      }
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const loadProgressData = useCallback(async () => {
     try {
@@ -75,9 +94,41 @@ export const ProgressScreen: React.FC = () => {
     }, [loadProgressData])
   );
 
+  const filteredData = useMemo(() => {
+    const now = Date.now();
+    let cutoffMs: number | null = null;
+    if (selectedScope === '7D') {
+      cutoffMs = now - 7 * 24 * 60 * 60 * 1000;
+    } else if (selectedScope === '30D') {
+      cutoffMs = now - 30 * 24 * 60 * 60 * 1000;
+    } else if (selectedScope === '90D') {
+      cutoffMs = now - 90 * 24 * 60 * 60 * 1000;
+    }
+
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
+    const safeWorkouts = Array.isArray(workouts) ? workouts : [];
+
+    const scopedSessions = cutoffMs
+      ? safeSessions.filter((s) => s && s.completedAt && new Date(s.completedAt).getTime() >= cutoffMs)
+      : safeSessions;
+
+    const scopedWorkouts = cutoffMs
+      ? safeWorkouts.filter((w) => {
+          if (!w || !w.dateKey) return false;
+          const time = new Date(`${w.dateKey}T23:59:59Z`).getTime();
+          return time >= cutoffMs;
+        })
+      : safeWorkouts;
+
+    return {
+      scopedSessions,
+      scopedWorkouts,
+    };
+  }, [sessions, workouts, selectedScope]);
+
   const dashboard = useMemo(() => {
-    return aggregateDashboardData(sessions, workouts, new Date());
-  }, [sessions, workouts]);
+    return aggregateDashboardData(filteredData.scopedSessions, filteredData.scopedWorkouts, new Date());
+  }, [filteredData]);
 
   const handleStartWorkout = () => {
     navigation.navigate('Train');
@@ -136,6 +187,7 @@ export const ProgressScreen: React.FC = () => {
   };
 
   const performanceIndex = dashboard.performanceIndex;
+  const isScopeLocked = selectedScope !== '7D' && !isPro;
 
   return (
     <ScreenContainer scrollable={true} contentContainerStyle={styles.container}>
@@ -164,7 +216,96 @@ export const ProgressScreen: React.FC = () => {
         </Card>
       )}
 
-      {/* Drill Score Average Hero Card */}
+      {/* Analytics Time Scope Selector */}
+      <View style={styles.scopeContainer} accessible={true} accessibilityRole="tablist">
+        {(['7D', '30D', '90D', 'ALL'] as const).map((scope) => {
+          const isSelected = selectedScope === scope;
+          const isLocked = scope !== '7D' && !isPro;
+          const label =
+            scope === '7D'
+              ? t.progress.scope7D
+              : scope === '30D'
+              ? t.progress.scope30D
+              : scope === '90D'
+              ? t.progress.scope90D
+              : t.progress.scopeAll;
+
+          return (
+            <TouchableOpacity
+              key={scope}
+              style={[
+                styles.scopePill,
+                isSelected && { backgroundColor: colors.primary, borderColor: colors.primaryLight },
+                !isSelected && { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+              ]}
+              onPress={() => setSelectedScope(scope)}
+              activeOpacity={0.7}
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`${label} ${isLocked ? t.common.locked : ''}`}
+            >
+              <View style={styles.scopePillContent}>
+                <Text
+                  style={[
+                    typography.label,
+                    { color: isSelected ? '#FFFFFF' : colors.textSecondary },
+                  ]}
+                >
+                  {label}
+                </Text>
+                {isLocked && (
+                  <CrownIcon size={12} color={isSelected ? '#FFFFFF' : colors.primaryLight} />
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {isScopeLocked ? (
+        /* Locked Scope Card for 30D / 90D / ALL */
+        <Card
+          variant="highlighted"
+          style={[
+            styles.lockedScopeCard,
+            {
+              borderColor: colors.primaryLight,
+              backgroundColor: 'rgba(124, 92, 252, 0.08)',
+            },
+          ]}
+        >
+          <View style={[styles.lockedScopeIconCircle, { backgroundColor: 'rgba(124, 92, 252, 0.18)' }]}>
+            <CrownIcon size={40} color={colors.primaryLight} />
+          </View>
+
+          <StatBadge
+            label={t.progress.proFeatureBadge}
+            variant="locked"
+            size="sm"
+            style={styles.lockedScopeBadge}
+          />
+
+          <Text style={[typography.h2, styles.lockedScopeTitle, { color: colors.textPrimary }]}>
+            {t.progress.lockedScopeTitle}
+          </Text>
+
+          <Text style={[typography.bodyMedium, styles.lockedScopeSubtitle, { color: colors.textSecondary }]}>
+            {t.progress.lockedScopeSubtitle}
+          </Text>
+
+          <Button
+            title={t.progress.unlockTrendsCta}
+            onPress={() => (navigation as any).navigate('PaywallModal')}
+            variant="primary"
+            size="lg"
+            icon={<CrownIcon size={18} color="#FFFFFF" />}
+            style={styles.lockedScopeBtn}
+          />
+        </Card>
+      ) : (
+        <>
+          {/* Drill Score Average Hero Card */}
       <Card variant="highlighted" style={styles.indexCard}>
         <View style={styles.indexHeaderRow}>
           <StatBadge
@@ -826,6 +967,8 @@ export const ProgressScreen: React.FC = () => {
           })}
         </View>
       )}
+        </>
+      )}
     </ScreenContainer>
   );
 };
@@ -1016,5 +1159,54 @@ const styles = StyleSheet.create({
   },
   sessionMetricItem: {
     alignItems: 'center',
+  },
+  scopeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 8,
+  },
+  scopePill: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scopePillContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  lockedScopeCard: {
+    padding: 24,
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  lockedScopeIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  lockedScopeBadge: {
+    marginBottom: 12,
+  },
+  lockedScopeTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  lockedScopeSubtitle: {
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  lockedScopeBtn: {
+    width: '100%',
   },
 });

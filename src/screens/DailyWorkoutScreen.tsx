@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -26,9 +26,11 @@ import {
   LayersIcon,
   CpuIcon,
   ArrowRightIcon,
+  CrownIcon,
 } from '../components/SvgIcons';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
+import { entitlementService } from '../services/EntitlementService';
 import {
   workoutRepository,
   DailyWorkoutRecord,
@@ -50,11 +52,25 @@ export const DailyWorkoutScreen: React.FC = () => {
   const { colors, typography } = useTheme();
   const { t } = useLocalization();
 
+  const [isPro, setIsPro] = useState<boolean>(entitlementService.isProSync());
   const [workout, setWorkout] = useState<DailyWorkoutRecord | null>(null);
   const [streak, setStreak] = useState<WorkoutStreakResult>({ currentStreak: 0, bestStreak: 0 });
   const [difficultyProfiles, setDifficultyProfiles] = useState<Record<GameId, GameDifficultyProfile> | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = entitlementService.subscribe((state) => {
+      if (isMounted) {
+        setIsPro(state.isPro);
+      }
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const loadWorkoutData = useCallback(async () => {
     try {
@@ -85,6 +101,13 @@ export const DailyWorkoutScreen: React.FC = () => {
     const drill = workout.drills[drillIndex];
     if (!drill) return;
 
+    const completedCount = workout.drills.filter((d) => d.status === 'completed').length;
+    const isCompleted = workout.status === 'completed' || completedCount === 3;
+    if (isCompleted && !isPro) {
+      navigation.navigate('PaywallModal');
+      return;
+    }
+
     navigation.navigate('GameIntro', {
       gameId: drill.gameId,
       workoutMode: true,
@@ -100,8 +123,20 @@ export const DailyWorkoutScreen: React.FC = () => {
     }
   };
 
+  const handleResetWorkoutPress = () => {
+    if (!isPro) {
+      navigation.navigate('PaywallModal');
+      return;
+    }
+    setShowResetModal(true);
+  };
+
   const handleConfirmReset = async () => {
     setShowResetModal(false);
+    if (!isPro) {
+      navigation.navigate('PaywallModal');
+      return;
+    }
     try {
       setIsLoading(true);
       const freshWorkout = await workoutRepository.resetTodayWorkout();
@@ -328,6 +363,38 @@ export const DailyWorkoutScreen: React.FC = () => {
           );
         })}
 
+        {/* Pro Daily Workout Limit Notice if on Free tier */}
+        {!isPro && (
+          <Card
+            variant="highlighted"
+            style={[
+              styles.proLimitCard,
+              {
+                borderColor: colors.primaryLight,
+                backgroundColor: 'rgba(124, 92, 252, 0.1)',
+              },
+            ]}
+          >
+            <View style={styles.proLimitHeaderRow}>
+              <CrownIcon size={22} color={colors.primaryLight} />
+              <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 8 }]}>
+                {t.dailyWorkout.limitReachedBadge}
+              </Text>
+            </View>
+            <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 6, lineHeight: 20 }]}>
+              {t.dailyWorkout.dailyLimitNotice}
+            </Text>
+            <Button
+              title={t.dailyWorkout.upgradeUnlimitedWorkoutsCta}
+              onPress={() => navigation.navigate('PaywallModal')}
+              variant="primary"
+              size="md"
+              icon={<CrownIcon size={16} color="#FFFFFF" />}
+              style={styles.proLimitBtn}
+            />
+          </Card>
+        )}
+
         {/* Bottom Done Actions */}
         <View style={styles.bottomCtaGroup}>
           <Button
@@ -338,8 +405,8 @@ export const DailyWorkoutScreen: React.FC = () => {
             icon={<CheckCircleIcon size={18} color="#FFFFFF" />}
           />
           <Button
-            title={t.dailyWorkout.resetWorkoutCta}
-            onPress={() => setShowResetModal(true)}
+            title={isPro ? t.dailyWorkout.resetWorkoutCta : `${t.dailyWorkout.resetWorkoutCta} (Pro)`}
+            onPress={handleResetWorkoutPress}
             variant="ghost"
             size="md"
             style={styles.resetBtn}
@@ -824,5 +891,17 @@ const styles = StyleSheet.create({
   modalActionBtn: {
     width: '100%',
     marginTop: 10,
+  },
+  proLimitCard: {
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1.5,
+  },
+  proLimitHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  proLimitBtn: {
+    marginTop: 12,
   },
 });

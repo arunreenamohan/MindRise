@@ -18,10 +18,12 @@ import {
   ClockIcon,
   ShieldCheckIcon,
   SparklesIcon,
+  CrownIcon,
 } from '../components/SvgIcons';
 import { getGameById } from '../games/registry';
 import { useTheme } from '../theme/ThemeContext';
 import { useLocalization } from '../localization/LocalizationContext';
+import { entitlementService } from '../services/EntitlementService';
 import {
   difficultyRepository,
   GameDifficultyProfile,
@@ -39,6 +41,7 @@ export const GameIntroScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [difficultyProfile, setDifficultyProfile] = useState<GameDifficultyProfile | null>(null);
+  const [isPro, setIsPro] = useState<boolean>(entitlementService.isProSync());
 
   const gameId = route.params?.gameId;
   const game = (gameId ? getGameById(gameId) : undefined) || getGameById('memory-matrix')!;
@@ -53,6 +56,20 @@ export const GameIntroScreen: React.FC = () => {
 
   const isTierBased = STARTING_DIFFICULTY_BOUNDS[game.id]?.isTierBased ?? false;
   const currentLevel = difficultyProfile?.startingLevel ?? STARTING_DIFFICULTY_BOUNDS[game.id]?.defaultStartingLevel ?? 1;
+  const isLevelGated = !isPro && (isTierBased ? currentLevel > 1 : currentLevel > 4);
+
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = entitlementService.subscribe((state) => {
+      if (isMounted) {
+        setIsPro(state.isPro);
+      }
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,6 +112,11 @@ export const GameIntroScreen: React.FC = () => {
   };
 
   const handleStartSession = () => {
+    if (isLevelGated) {
+      (navigation as any).navigate('PaywallModal');
+      return;
+    }
+
     const screenMap: Record<string, keyof RootStackParamList> = {
       'memory-matrix': 'MemoryMatrixGame',
       'number-recall': 'NumberRecallGame',
@@ -183,16 +205,66 @@ export const GameIntroScreen: React.FC = () => {
           </View>
 
           <View style={styles.specItem}>
-            <ZapIcon size={20} color={colors.warning} />
+            <ZapIcon size={20} color={isLevelGated ? colors.attention : colors.warning} />
             <Text style={[typography.caption, { color: colors.textMuted, marginTop: 4 }]}>
               {isTierBased ? t.gameIntro.startingTierLabel : t.gameIntro.startingLevelLabel}
             </Text>
-            <Text style={[typography.h3, { color: colors.textPrimary, marginTop: 2 }]}>
-              {isTierBased ? `${t.dailyWorkout.tierBadge} ${currentLevel}` : `${t.dailyWorkout.levelBadge} ${currentLevel}`}
-            </Text>
+            <View style={styles.levelRow}>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginTop: 2 }]}>
+                {isTierBased ? `${t.dailyWorkout.tierBadge} ${currentLevel}` : `${t.dailyWorkout.levelBadge} ${currentLevel}`}
+              </Text>
+              {isLevelGated && (
+                <StatBadge
+                  label={t.gameIntro.proRequiredBadge}
+                  variant="locked"
+                  size="sm"
+                  style={styles.proLevelBadge}
+                />
+              )}
+            </View>
           </View>
         </View>
       </Card>
+
+      {/* Gated Difficulty Notice Card */}
+      {isLevelGated && (
+        <Card
+          variant="highlighted"
+          style={[
+            styles.gatedCard,
+            {
+              borderColor: colors.primaryLight,
+              backgroundColor: 'rgba(124, 92, 252, 0.12)',
+            },
+          ]}
+        >
+          <View style={styles.gatedHeaderRow}>
+            <CrownIcon size={22} color={colors.primaryLight} />
+            <Text style={[typography.h3, { color: colors.textPrimary, marginLeft: 8 }]}>
+              {isTierBased ? t.gameIntro.unlockProTierCta : t.gameIntro.unlockProLevelCta}
+            </Text>
+          </View>
+          <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 6, lineHeight: 20 }]}>
+            {isTierBased ? t.gameIntro.tierGatedNotice : t.gameIntro.levelGatedNotice}
+          </Text>
+          <View style={styles.gatedActionRow}>
+            <Button
+              title={isTierBased ? t.gameIntro.unlockProTierCta : t.gameIntro.unlockProLevelCta}
+              onPress={() => (navigation as any).navigate('PaywallModal')}
+              variant="primary"
+              size="sm"
+              icon={<CrownIcon size={16} color="#FFFFFF" />}
+              style={styles.gatedUpgradeBtn}
+            />
+            <Button
+              title={isTierBased ? t.gameIntro.resetToFreeTier : t.gameIntro.resetToFreeLevel}
+              onPress={() => setShowResetModal(true)}
+              variant="ghost"
+              size="sm"
+            />
+          </View>
+        </Card>
+      )}
 
       {/* Adaptive Progression Context & Reset Option */}
       <Card variant="outlined" style={styles.adaptiveCard}>
@@ -276,11 +348,15 @@ export const GameIntroScreen: React.FC = () => {
       {/* Start Button */}
       <View style={styles.bottomCta}>
         <Button
-          title={t.gameIntro.startDrill}
+          title={
+            isLevelGated
+              ? (isTierBased ? t.gameIntro.unlockProTierCta : t.gameIntro.unlockProLevelCta)
+              : t.gameIntro.startDrill
+          }
           onPress={handleStartSession}
           variant="primary"
           size="lg"
-          icon={<ZapIcon size={18} color="#FFFFFF" />}
+          icon={isLevelGated ? <CrownIcon size={18} color="#FFFFFF" /> : <ZapIcon size={18} color="#FFFFFF" />}
         />
       </View>
 
@@ -512,5 +588,30 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     width: '100%',
     marginTop: 8,
+  },
+  levelRow: {
+    alignItems: 'center',
+  },
+  proLevelBadge: {
+    marginTop: 4,
+  },
+  gatedCard: {
+    marginTop: 14,
+    padding: 16,
+    borderWidth: 1.5,
+  },
+  gatedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gatedActionRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  gatedUpgradeBtn: {
+    flex: 1,
   },
 });
