@@ -280,4 +280,22 @@ export const DeleteIcon: React.FC<IconProps> = ({ size = 24, color = '#FFFFFF', 
   </Svg>
 );
 
+export const CheckIcon: React.FC<IconProps> = ({ size = 20, color = '#10B981', strokeWidth = 2.5 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Polyline points="20 6 9 17 4 12" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+export const CrownIcon: React.FC<IconProps> = ({ size = 24, color = '#7C5CFC', strokeWidth = 2 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 

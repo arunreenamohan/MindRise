@@ -19,5 +19,6 @@ export type RootStackParamList = {
   LogicQuestGame: { workoutMode?: boolean; drillIndex?: number; initialLevel?: number } | undefined;
   FocusFinderGame: { workoutMode?: boolean; drillIndex?: number; initialLevel?: number } | undefined;
   PatternMasterGame: { workoutMode?: boolean; drillIndex?: number; initialLevel?: number } | undefined;
+  PaywallModal: undefined;
 };
 

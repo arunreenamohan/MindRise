@@ -183,4 +183,19 @@ describe('MindRise Localization (EN & ML)', () => {
     const mlDwKeys = Object.keys(ml.dailyWorkout).sort();
     expect(enDwKeys).toEqual(mlDwKeys);
   });
+
+  it('provides complete Paywall translations in English and Malayalam', () => {
+    expect(en.paywall.title).toBe('MindRise Pro');
+    expect(ml.paywall.title).toBe('മൈൻഡ്‌റൈസ് പ്രോ');
+
+    expect(en.paywall.upgradeCta).toBe('Upgrade to Pro');
+    expect(ml.paywall.upgradeCta).toBe('പ്രോയിലേക്ക് അപ്ഗ്രേഡ് ചെയ്യുക');
+
+    expect(en.paywall.restorePurchases).toBe('Restore Purchases');
+    expect(ml.paywall.restorePurchases).toBe('വാങ്ങിയവ വീണ്ടെടുക്കുക');
+
+    const enPwKeys = Object.keys(en.paywall).sort();
+    const mlPwKeys = Object.keys(ml.paywall).sort();
+    expect(enPwKeys).toEqual(mlPwKeys);
+  });
 });

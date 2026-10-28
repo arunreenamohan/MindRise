@@ -12,6 +12,7 @@ import { QuickReactionGameScreen } from '../screens/QuickReactionGameScreen';
 import { LogicQuestGameScreen } from '../screens/LogicQuestGameScreen';
 import { FocusFinderGameScreen } from '../screens/FocusFinderGameScreen';
 import { PatternMasterGameScreen } from '../screens/PatternMasterGameScreen';
+import { PaywallModalScreen } from '../screens/PaywallModalScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { hasCompletedOnboarding } from '../storage';
 
@@ -118,6 +119,14 @@ export const RootNavigator: React.FC = () => {
         options={{
           presentation: 'card',
           animation: 'fade_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="PaywallModal"
+        component={PaywallModalScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
         }}
       />
     </Stack.Navigator>
