@@ -288,7 +288,7 @@ describe('EntitlementService', () => {
       capturedPurchaseListener!(purchasePayload);
 
       // Wait a tick for async handler
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 50));
 
       expect(service.getEntitlementStateSync().isPro).toBe(true);
       expect(service.getEntitlementStateSync().activePlan).toBe(MINDRISE_SKUS.ANNUAL);
